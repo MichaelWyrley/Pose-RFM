@@ -1,0 +1,15 @@
+/models/*
+/images/*
+/dataset/*
+/samples/*
+/experiments/samples/*
+/experiments/__pycache__
+/working_models/*
+/__pycache__
+/animal/notmycode/*
+animal/samples/
+/animal/__pycache__
+FlowMatchingModels/__pycache__
+/Utils/__pycache__
+VectorFieldModels/__pycache__
+/best_model/*

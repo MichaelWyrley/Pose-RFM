@@ -1,0 +1,10 @@
+MODEL = working_models/noised_pose_0/ema_model_400.pt
+0.11361257,0.0,0.09845346,0.0
+MODEL = working_models/noised_pose_50/ema_model_400.pt
+0.12272852,0.0,0.10484238,0.0
+MODEL = working_models/noised_pose_75/ema_model_400.pt
+0.12252979,0.0,0.10384931,0.0
+MODEL = working_models/noised_pose_90/ema_model_400.pt
+0.12681657,0.0,0.10688614,0.0
+MODEL = working_models/noised_pose_100/ema_model_400.pt
+0.12379258,0.0,0.10434516,0.0
