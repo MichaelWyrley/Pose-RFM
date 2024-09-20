@@ -62,9 +62,6 @@ def get_mpjpe(gtf_poses, genf_poses):
 # modified from https://github.com/caizhongang/SMPLer-X/blob/main/data/humandata.py#593
 def get_pve(gtf_vert, genf_verts, J_regressor):
     # MPVPE from all vertices
-    # print(genf_verts.shape, smpl['J_regressor'][:22].shape, gtf_vert.shape)
-    # print(np.dot(smpl['J_regressor'][:22], genf_verts)[0, :,:].reshape(-1, 1, 3).shape)
-    # print(np.dot(smpl['J_regressor'][:22], gtf_vert)[0, :,:].reshape(-1, 1, 3).shape)
     mesh_out_align = genf_verts - np.dot(J_regressor[:22], genf_verts)[0, None,:] + np.dot(J_regressor[:22], gtf_vert)[0, None,:]
     mesh_out_align = rigid_align(genf_verts, gtf_vert)
     pa_mpvpe = np.sqrt(np.sum((mesh_out_align - gtf_vert) ** 2, 1)).mean() * 1000
@@ -73,10 +70,10 @@ def get_pve(gtf_vert, genf_verts, J_regressor):
 
 
 def get_pck(gtf_poses, genf_poses):
-    distance = np.sqrt(np.sum((joint_out_body_align - gtf_poses) ** 2, 1)) * 1000
-    print((distance > 50).shape)
+    distance = np.sqrt(np.sum((genf_poses - gtf_poses) ** 2, 1)) * 1000
+    percent = (distance > 50).sum() / len(distance)
 
-    return None
+    return percent
 
 # def calculate_metrics(args, device='cuda'):
     
@@ -128,10 +125,10 @@ def calculate_metrics(args, device='cuda'):
         
         gtf_poses = pose_to_vert(gtf_poses, gtf_betas, args)
 
-        for i in gtf_po
-        results['pa_mpjpe'].append( get_mpjpe(gtf_poses.Jtr.cpu().detach().numpy()[:, :22], gtf_poses.Jtr.cpu().detach().numpy()[:, :22]))
-        results['pa_mpvpe'].append( get_pve(gtf_poses.v.cpu().detach().numpy(), gtf_poses.v.cpu().detach().numpy(), model['J_regressor']))
-        results['pck'].append( get_pck(gtf_poses.Jtr.cpu().detach().numpy()[:, :22], gtf_poses.Jtr.cpu().detach().numpy()[:, :22]))
+        for (joints, vertices) in zip(gtf_poses.Jtr, gtf_poses.v):
+            results['pa_mpjpe'].append( get_mpjpe(joints.cpu().detach().numpy()[:22], joints.cpu().detach().numpy()[:22]))
+            results['pa_mpvpe'].append( get_pve(vertices.cpu().detach().numpy(), vertices.cpu().detach().numpy(), model['J_regressor']))
+            results['pck'].append( get_pck(joints.cpu().detach().numpy()[:22], joints.cpu().detach().numpy()[:22]))
 
 
     results['pa_mpjpe'] = np.array( results['pa_mpjpe'])
@@ -167,11 +164,11 @@ if __name__ == '__main__':
         'ground_truth_directory': '/vol/bitbucket/mew23/individual-project/dataset/3DPW/npz_poses/ground_truth/',
         'generated_directory': 'dataset/3DPW/npz_poses/generated_smpl/',
         
-
+        'file': 
         'model': './dataset/models/neutral/model.npz',
     }
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     result = calculate_metrics(args, device)
 
-    # load_model(args)
+    
