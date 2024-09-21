@@ -8,8 +8,10 @@
 /__pycache__
 
 animal/samples/
+animal/img/
 /animal/__pycache__
 FlowMatchingModels/__pycache__
 /Utils/__pycache__
 VectorFieldModels/__pycache__
 /best_model/*
+

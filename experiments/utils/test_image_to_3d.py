@@ -11,6 +11,7 @@ from os import path as osp
 from human_body_prior.tools.omni_tools import copy2cpu as c2c
 from human_body_prior.body_model.body_model import BodyModel
 
+
 def pose_to_vert(pose_body, betas, args, device='cuda'):
     bm_fname = osp.join(args['directory'], args['model'])
     num_betas = len(betas) # number of body parameters
@@ -71,64 +72,42 @@ def get_pve(gtf_vert, genf_verts, J_regressor):
 
 def get_pck(gtf_poses, genf_poses):
     distance = np.sqrt(np.sum((genf_poses - gtf_poses) ** 2, 1)) * 1000
-    percent = (distance > 50).sum() / len(distance)
+    percent = (distance < 50).sum() / len(distance)
 
     return percent
-
-# def calculate_metrics(args, device='cuda'):
-    
-#     ground_truth_files = sorted(glob.glob(args['ground_truth_directory'] + '*.npz'))
-#     generated_files = sorted(glob.glob(args['generated_directory'] + '*.npz'))
-
-#     print(len(ground_truth_files), len(generated_files))
-
-#     for (gtf, genf) in zip(ground_truth_files, generated_files):
-
-#         ground_truth_sequence = np.load(gtf, allow_pickle=True)
-#         generated_sequence = np.load(genf, allow_pickle=True)
-
-#         gtf_poses = np.array(ground_truth_sequence['pose_body'])
-#         genf_poses = np.array(generated_sequence['pose_body'])
-
-#         gtf_betas = np.array(ground_truth_sequence['betas'])
-#         genf_betas = np.array(generated_sequence['betas'])
-
-#         print(gtf_poses.shape, genf_poses.shape)
-#         for i in genf_poses:
-#             print(np.array(i).shape)
-
-#         exit()
-
-#         # pose_body, joint_position, betas
-#         # print(np.array(ground_truth_sequence['pose_body']).shape, np.array(generated_sequence['pose_body'][0]).shape)
-
-#         # for (gt_pose, gen_pose):
-
 
 
 
 def calculate_metrics(args, device='cuda'):
     
-    ground_truth_files = sorted(glob.glob(args['ground_truth_directory'] + '*.npz'))
+    ground_truth_files = [sorted(glob.glob(args['ground_truth_directory'] + '*.npz'))[0]]
+    generated_files = sorted(glob.glob(args['generated_directory'] + '*.npz'))
+
+    print(ground_truth_files, generated_files)
     model = np.load(args['directory'] + args['model'], allow_pickle=True)
     # j14_regressor = 
 
     results = {'pa_mpjpe': [], 'pa_mpvpe': [], 'pck': [] }
 
-    for gtf in ground_truth_files:
+    for (gtf, genf) in zip(ground_truth_files, generated_files):
         print("Calculateing for:", gtf.split('/')[-1].split('.')[0])
 
         ground_truth_sequence = np.load(gtf, allow_pickle=True)
+        generated_sequence = np.load(genf, allow_pickle=True)
 
         gtf_poses = np.array(ground_truth_sequence['poses'][0])[:, 3:66]  # 3:72 then :63
         gtf_betas = np.array(ground_truth_sequence['betas'][0])[:10]
+
+        genf_poses = np.array(generated_sequence['body_pose'])[:, :63]
+        genf_betas = np.array(generated_sequence['betas'])[:10]
         
         gtf_poses = pose_to_vert(gtf_poses, gtf_betas, args)
+        genf_poses = pose_to_vert(genf_poses, gtf_betas, args)
 
-        for (joints, vertices) in zip(gtf_poses.Jtr, gtf_poses.v):
-            results['pa_mpjpe'].append( get_mpjpe(joints.cpu().detach().numpy()[:22], joints.cpu().detach().numpy()[:22]))
-            results['pa_mpvpe'].append( get_pve(vertices.cpu().detach().numpy(), vertices.cpu().detach().numpy(), model['J_regressor']))
-            results['pck'].append( get_pck(joints.cpu().detach().numpy()[:22], joints.cpu().detach().numpy()[:22]))
+        for i in range(gtf_poses.Jtr.shape[0]):
+            results['pa_mpjpe'].append( get_mpjpe(gtf_poses.Jtr[i].cpu().detach().numpy()[:22], genf_poses.Jtr[i].cpu().detach().numpy()[:22]))
+            results['pa_mpvpe'].append( get_pve(gtf_poses.v[i].cpu().detach().numpy(), genf_poses.v[i].cpu().detach().numpy(), model['J_regressor']))
+            results['pck'].append(      get_pck(gtf_poses.Jtr[i].cpu().detach().numpy()[:22], genf_poses.Jtr[i].cpu().detach().numpy()[:22]))
 
 
     results['pa_mpjpe'] = np.array( results['pa_mpjpe'])
@@ -141,34 +120,55 @@ def calculate_metrics(args, device='cuda'):
 
     return results
 
-def load_model(args):
-    # model = np.load(args['directory'] + args['model'], allow_pickle=True)
-    ground_truth_files = sorted(glob.glob(args['ground_truth_directory'] + '*.npz'))
+def generate_denoised_values(args, device='cuda'):
+    model = DiT_adaLN_zero(in_dim=6, depth=12, emb_dimention=768, num_heads=12,).to(device)
+    model.load_state_dict(torch.load(args['directory'] + args['load_model']))
+    model.eval()
 
-    for gtf in ground_truth_files:
+    diffusion = FlowMatchingMatrix(model, device=device)
 
-        ground_truth_sequence = np.load(gtf, allow_pickle=True)
+    noisy_seq = sorted(glob.glob(args['directory'] + args['generated_directory'] + '/*/*.npz'))
 
-        print(np.array(ground_truth_sequence['betas'][0])[:20])
-    # for i in model:
-    #     print(i)
+    with torch.no_grad():
+        for i, seq in enumerate(noisy_seq):
+            print("denoising " + seq.split('/')[-1].split('.')[0])
+            cdata = np.load(seq)
+            noisy_poses = cdata['body_pose'][:, :63]
+            noisy_poses = torch.Tensor(noisy_poses.reshape(-1, 21, 3)).to(device)
 
-    # print(model['J_regressor'].shape)
-    # print(model['J'].shape)
-    
+            batched_noisy_poses = torch.split(noisy_poses, args['batch_size'])
+            clean_poses = []
+            for pose in batched_noisy_poses:
+                clean_pose = diffusion.denoise_pose(pose, args['initial_timestep'], args['timesteps'], args['scale']).cpu().detach().numpy()
+                clean_poses.append(clean_pose)
+
+            clean_poses = np.array(clean_poses)
+            np.savez(args['directory'] + args['denoised_directory'], body_pose=clean_poses, betas=cdata['betas'])
+            
+
 
 if __name__ == '__main__':
     args = {
         # 'support_dir': '/vol/bitbucket/mew23/individual_project/',
         'directory': '/vol/bitbucket/mew23/individual-project/',
+
+        'load_model': 'best_model/ema_model_1200.pt',
+
         'ground_truth_directory': '/vol/bitbucket/mew23/individual-project/dataset/3DPW/npz_poses/ground_truth/',
-        'generated_directory': 'dataset/3DPW/npz_poses/generated_smpl/',
+        'generated_directory': 'dataset/3DPW/smpl_poses/',
+        'denoised_directory': 'dataset/3DPW/npz_poses/denoised_smpl/',
+
+        'batch_size': 500,
+        'initial_timestep': 10,
+        'timesteps': 15,
+        'scale': 4,
         
-        'file': 
+        
         'model': './dataset/models/neutral/model.npz',
     }
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+    # generate_denoised_values(args, device)
     result = calculate_metrics(args, device)
 
     

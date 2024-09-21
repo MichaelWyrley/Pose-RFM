@@ -70,30 +70,30 @@ def visualise(args):
         0.30899699])
     # dmpl_fname = osp.join(args['directory'], 'body_models/dmpls/{}/model.npz'.format(subject_gender))
 
-    num_betas = 16 # number of body parameters
+    num_betas = 10 # number of body parameters
     num_dmpls = 8 # number of DMPL parameters
 
     bm = BodyModel(bm_fname, num_betas=num_betas, model_type='smplh').to(device)
     faces = c2c(bm.f)
 
-    time_length = len(bdata['pose_body'])
+    time_length = bdata['poses'].shape[1]
     # time_length = 16
     
     # time_length = len(bdata['trans'])
-
+    print(bdata['poses'].shape)
     body_parms = {
         # 'root_orient': torch.Tensor(bdata['poses'][:, :3]).to(device), # controls the global root orientation
-        'pose_body': torch.Tensor(bdata['pose_body'][:time_length].reshape(time_length, -1)).to(device), # controls the body
+        'pose_body': torch.Tensor(bdata['poses'][0, :time_length].reshape(time_length, -1)[:, 3:66]).to(device), # controls the body
         # 'pose_hand': torch.Tensor(bdata['poses'][:, 66:]).to(device), # controls the finger articulation
         # 'trans': torch.Tensor(bdata['trans']).to(device), # controls the global body position
-        'betas': torch.Tensor(np.repeat(betas[:num_betas][np.newaxis], repeats=time_length, axis=0)).to(device), # controls the body shape. Body shape is static
+        'betas': torch.Tensor(np.repeat(bdata['betas'][0, np.newaxis], repeats=time_length, axis=0)[:, :10]).to(device), # controls the body shape. Body shape is static
         # 'dmpls': torch.Tensor(bdata['dmpls'][:, :num_dmpls]).to(device) # controls soft tissue dynamics
     }
 
     if args['print']: print('Body parameter vector shapes: \n{}'.format(' \n'.join(['{}: {}'.format(k,v.shape) for k,v in body_parms.items()])))
     if args['print']: print('time_length = {}'.format(time_length))
   
-    body_pose_beta = bm(pose_body=body_parms['pose_body'])
+    body_pose_beta = bm(pose_body=body_parms['pose_body'], betas = body_parms['betas'])
 
     imw, imh=800, 800
     mv = MeshViewer(width=imw, height=imh, use_offscreen=True)
@@ -124,13 +124,14 @@ if __name__ == '__main__':
     args = {
         # 'support_dir': '/vol/bitbucket/mew23/individual_project/',
         'directory': '/vol/bitbucket/mew23/individual-project/',
-        'frame': 'samples/gen_video/data_0.npz',
+        # 'frame': 'dataset/3DPW/smpl_poses/downtown_stairs_00.npz',
+        'frame': 'dataset/3DPW/npz_poses/ground_truth/downtown_stairs_00.npz',
         'model': './dataset/models/neutral/model.npz',
         'image_loc': './samples/images/',
         'name': '',
         'print': True,
 
-        'save_grid': True,
+        'save_grid': False,
         
 
     }

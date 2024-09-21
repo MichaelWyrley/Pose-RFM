@@ -16,13 +16,14 @@ from PIL import ImageOps
 from human_body_prior.tools.omni_tools import copy2cpu as c2c
 from os import path as osp
 from Utils.Image.visualise import images_to_grid, vis_body_joints, vis_body_pose_beta, vis_body_pose_hand
+from Utils.Image.Renderer import Renderer
 import pickle as pkl
 
 
 # This code is directly copied from SMALViewer (https://github.com/benjiebob/SMALViewer) and flame-fitting (https://github.com/Rubikplayer/flame-fitting)
 # It hasn't been added directly to the repository as animal generation is not the main aim
 from notmycode.smal_model import SMAL
-from notmycode.Renderer import Renderer
+# from notmycode.Renderer import Renderer
 
 label_to_betas = [20, 5, 38, 33, 31]
 
@@ -73,6 +74,8 @@ def visualise(args):
         verts = verts - torch.mean(verts, dim = 1, keepdim=True)
 
         img = renerer(verts, smal_model.faces)
+        if args['output_obj']:
+                render.save_ob(verts, smal_model.faces, args['directory'] + args['image_loc'] + "{:03d}.obj".format(i))
     
         images.append(img.permute(2,0,1))
 
@@ -89,6 +92,7 @@ if __name__ == '__main__':
         'model_data': 'dataset/animal3d/MODELS/smpl_models/my_smpl_data_00781_4_all.pkl',
         'image_loc': './animal/',
         'name': '',
+        'output_obj': True,
         
 
     }

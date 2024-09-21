@@ -223,9 +223,6 @@ class PoseData(Dataset):
 
         self.data_splits = amass_splits[self.mode]
 
-        # self.noisy_seqs = sorted(glob.glob(self.noisy_dir + '/*/*.npz'))
-        # self.noisy_seqs = [ds for ds in self.noisy_seqs if ds.split('/')[-2] in self.data_splits]
-
         self.clean_seqs = sorted(glob.glob(self.clean_dir + '/*/*.npz'))
         self.clean_seqs = [ds for ds in self.clean_seqs if ds.split('/')[-2] in self.data_splits]
     
@@ -233,15 +230,6 @@ class PoseData(Dataset):
         return len(self.clean_seqs)
 
     def __getitem__(self, idx):
-        # bdata = np.load(self.noisy_seqs[idx])
-        # dist = bdata['dist'][:, 0].astype(np.float32)
-
-        # subsample_indices = np.random.randint(0, len(bdata['noisy_quats']), self.num_pts)
-
-        # # noisy data
-        # poses = bdata['noisy_quats'][subsample_indices].astype(np.float32)
-        
-        # dist = dist[subsample_indices]
 
         # clean data
         cdata = np.load(self.clean_seqs[idx])
