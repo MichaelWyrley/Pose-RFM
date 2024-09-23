@@ -3,15 +3,22 @@
 /dataset/*
 /samples/*
 /experiments/samples/*
-/experiments/__pycache__
 /working_models/*
-/__pycache__
 
-animal/samples/
-animal/img/
-/animal/__pycache__
-FlowMatchingModels/__pycache__
-/Utils/__pycache__
-VectorFieldModels/__pycache__
+
 /best_model/*
+
+main/animal/samples/
+main/animal/img/
+
+*/__pycache__
+# /experiments/__pycache__
+# main/animal/__pycache__
+# main/FlowMatchingModels/__pycache__
+# main/Utils/__pycache__
+# main/VectorFieldModels/__pycache__
+# main\Utils\Image\__pycache__
+# main\Utils\Model\__pycache__
+# experiments\sampling\__pycache__
+# experiments\utils\__pycache__
 

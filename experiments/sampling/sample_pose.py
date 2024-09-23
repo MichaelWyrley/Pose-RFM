@@ -6,12 +6,9 @@ sys.path.append(os.getcwd())
 import torch
 import matplotlib.pyplot as plt
 
-from FlowMatchingModels.flowMatchingMatrix import FlowMatchingMatrix
-from VectorFieldModels.Transformer import DiT
-from Utils.NRDF.data.dataloaders import PoseData
-from VectorFieldModels.Transformer_adaLN_zero import DiT_adaLN_zero
+from main.flowMatchingModels.flowMatchingMatrix import FlowMatchingMatrix
+from main.vectorFieldModels.Transformer_adaLN_zero import DiT_adaLN_zero
 
-from Utils.NRDF.utils.transforms import quaternion_to_axis_angle
 import numpy as np
 
 def sample_model(diffusion, args):

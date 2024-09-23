@@ -7,20 +7,17 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-from utils.test_generation import average_pairwise_distance, frechet_distance
-from sampling.sample_pose_denoising import gen_noisy
+from experiments.tests.test_generation import average_pairwise_distance, frechet_distance
 from sampling.sample_pose import sample_model
-from utils.test_partial_generation import gen_partial
-from utils.test_pose_denoising import project_poses
+from experiments.tests.test_pose_denoising import project_poses
 
-from FlowMatchingModels.flowMatchingMatrix import FlowMatchingMatrix
-from VectorFieldModels.Transformer_adaLN_zero import DiT_adaLN_zero
-from VectorFieldModels.Transformer import DiT
+from main.flowMatchingModels.flowMatchingMatrix import FlowMatchingMatrix
+from main.vectorFieldModels.Transformer_adaLN_zero import DiT_adaLN_zero
+from main.vectorFieldModels.Transformer import DiT
 
 def test_denoise_different_models():
     print("----------test_different_models---------")
     args = {
-        'directory': '/vol/bitbucket/mew23/individual-project/',
         'no_samples': 20,
         
         'dataset_directory': './dataset/amass/SAMPLED_POSES/',
@@ -57,11 +54,11 @@ def test_denoise_different_models():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(device)
 
-    with open(args['directory'] + args['file'], 'a') as f:
+    with open(args['file'], 'a') as f:
         for i in args['load_model']:
             print("testing model", i)
             model = DiT_adaLN_zero().to(device)
-            model.load_state_dict(torch.load(args['directory'] + i))
+            model.load_state_dict(torch.load(i))
             model.eval()
 
             diffusion = FlowMatchingMatrix(model, device=device)
@@ -71,11 +68,9 @@ def test_denoise_different_models():
             f.write("MODEL = " + i + "\n")
             f.write(str(geo_m2m_mean) + ',' + str(geo_m2m_std) + ',' + str(m2m_dist_mean) + ',' +str(m2m_dist_std) + '\n')
 
-
 def test_different_models():
     print("----------test_different_models---------")
     args = {
-        'directory': '/vol/bitbucket/mew23/individual-project/',
         'save_location': 'experiments/samples/generated_samples/', 
         'samples': 500,
         'no_samples': 20,
@@ -101,11 +96,11 @@ def test_different_models():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(device)
 
-    with open(args['directory'] + args['file'], 'a') as f:
+    with open(args['file'], 'a') as f:
         for i in args['load_model']:
             print("testing model", i)
             model = DiT_adaLN_zero().to(device)
-            model.load_state_dict(torch.load(args['directory'] + i))
+            model.load_state_dict(torch.load(i))
             model.eval()
 
             diffusion = FlowMatchingMatrix(model, device=device)
@@ -121,7 +116,6 @@ def test_different_models():
 def test_dit_vs_ada_dit():
     print("----------test_different_models---------")
     args = {
-        'directory': '/vol/bitbucket/mew23/individual-project/',
         'save_location': 'experiments/samples/generated_samples/', 
         'samples': 500,
         'no_samples': 20,
@@ -145,10 +139,10 @@ def test_dit_vs_ada_dit():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(device)
 
-    with open(args['directory'] + args['file'], 'a') as f:
+    with open(args['file'], 'a') as f:
         print("testing model dit")
         model = DiT().to(device)
-        model.load_state_dict(torch.load(args['directory'] + args['load_model'][1]))
+        model.load_state_dict(torch.load(args['load_model'][1]))
         model.eval()
         diffusion = FlowMatchingMatrix(model, device=device)
         
@@ -164,10 +158,9 @@ def test_dit_vs_ada_dit():
 def test_differnt_no_samples_and_scales():
     print("----------test_differnt_no_samples_and_scales---------")
     args = {
-        'directory': '/vol/bitbucket/mew23/individual-project/',
         'save_location': 'experiments/samples/generated_samples/', 
         'samples': 500,
-        'no_samples': 7,
+        'no_samples': 20,
         # next do scale 3, for 1,5,10,20,25,30,35,40,50
         'all_scale': [3.5],
         'all_sample_timestep': [1],
@@ -190,11 +183,11 @@ def test_differnt_no_samples_and_scales():
     print(device)
 
 
-    with open(args['directory'] + args['file'], 'a') as f:
+    with open(args['file'], 'a') as f:
         for model_loc in args['load_model']:
 
             model = DiT_adaLN_zero().to(device)
-            model.load_state_dict(torch.load(args['directory'] + model_loc))
+            model.load_state_dict(torch.load(model_loc))
             model.eval()
 
             diffusion = FlowMatchingMatrix(model, device=device)
