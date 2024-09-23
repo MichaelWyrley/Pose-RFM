@@ -9,14 +9,14 @@
 main/animal/samples/
 main/animal/img/
 
-*/__pycache__
-# /experiments/__pycache__
-# main/animal/__pycache__
-# main/FlowMatchingModels/__pycache__
-# main/Utils/__pycache__
-# main/VectorFieldModels/__pycache__
-# main\Utils\Image\__pycache__
-# main\Utils\Model\__pycache__
-# experiments\sampling\__pycache__
-# experiments\utils\__pycache__
+__pycache__/
+experiments/__pycache__
+experiments/tests/__pycache__
+main/__pycache__
+main/vectorFieldModels/__pycache__
+main/utils/__pycache__
+main/flowMatchingModels/__pycache__
+main/animal/__pycache__
+
+
 
