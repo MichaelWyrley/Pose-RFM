@@ -9,7 +9,7 @@ from main.vectorFieldModels.Transformer_adaLN_zero import DiT_adaLN_zero
 
 from main.utils.NRDF.data.dataloaders import PoseData
 import pytorch3d.transforms as transforms
-from main.utils.image.visualise import visualise
+from main.utils.image.visualise_torch3d import visualise
 import numpy as np
 
 def partial_corruption(clean_pose, diffusion, removal_level=0.6):
@@ -46,38 +46,39 @@ def partial_generation(diffusion, args):
 
 if __name__ == '__main__':
     args = {
-        'clean': './dataset/amass/SAMPLED_POSES/',
+        'clean': 'dataset/amass/SAMPLED_POSES/',
 
         'batch_size': 1,
         'no_samples': 16,
         'scale': 4,
 
         'removal_level': 0.2,
-        'timesteps': 50,
+        'timesteps': 35,
         # Make 0 if don't want to use
-        'load_model': 'models/ema_model_400.pt',
+        'load_model': 'best_model/ema_model_1200.pt',
 
         'frame': 'samples/missing_points/original/data_0.npz',
         'image_loc': 'samples/missing_points/original/images/',
-        'model': './dataset/models/neutral/model.npz',
+        'model': 'dataset/models/neutral/model.npz',
 
         'name': '',
+        'time_length': 2,
         'print': False,
         'save_grid': True,
+        'output_obj': False,
         'sample_single': True
 
     }
 
-    os.mkdir('samples/missing_points/original', exist_ok=True)
-    os.mkdir('samples/missing_points/generated', exist_ok=True)
-    os.mkdir('samples/missing_points/original/images', exist_ok=True)
-    os.mkdir('samples/missing_points/generated/images', exist_ok=True)
+    # os.mkdir('samples/missing_points/original', exist_ok=True)
+    # os.mkdir('samples/missing_points/generated', exist_ok=True)
+    # os.mkdir('samples/missing_points/original/images', exist_ok=True)
+    # os.mkdir('samples/missing_points/generated/images', exist_ok=True)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(device)
-    # model = UNet(in_channels=15, out_channels=3, emb_dimention=256, img_size=32, num_heads=4, num_classes=10, condition_prob=0.25).to(device)
     model = DiT_adaLN_zero().to(device)
-    model.load_state_dict(torch.load(args['directory'] + args['load_model']))
+    model.load_state_dict(torch.load(args['load_model']))
     model.eval()
 
     diffusion = FlowMatchingMatrix(model, device=device)

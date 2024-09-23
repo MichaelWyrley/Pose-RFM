@@ -1,8 +1,7 @@
-import os
-os.environ['PYOPENGL_PLATFORM'] = 'egl'
 import sys
+sys.path.append('')
 # add the current working directory so this can be run from the github repo root !!
-sys.path.append(os.getcwd())
+# sys.path.append(os.getcwd())
 import torch
 import numpy as np
 import glob

@@ -2,7 +2,8 @@ import sys
 sys.path.append('')
 import torch
 from main.utils.sampling.sample import sample_single, sample_full, sample_full_for_video
-from main.utils.image.visualise import visualise
+# from main.utils.image.visualise import visualise
+from main.utils.image.visualise_torch3d import visualise
 
 from main.flowMatchingModels.flowMatchingMatrix import FlowMatchingMatrix
 from main.vectorFieldModels.Transformer_adaLN_zero import DiT_adaLN_zero
@@ -41,15 +42,18 @@ if __name__ == '__main__':
         'name': '',
      
         'frame': 'samples/sample_list/sample_0.npz',
-        'model': './dataset/models/neutral/model.npz',
+        'model': 'dataset/models/neutral/model.npz',
         'image_loc': './samples/images/',
         'print': True,
 
-        'save_grid': True,
+        'output_obj': True,
+        'time_length': 10000,
+
+        'save_grid': False,
     }
 
-    os.makedirs(args['sample_dir'], exist_ok=True)
-    os.mkdir(args['image_loc'], exist_ok=True)
+    # os.mkdirs(args['sample_dir'], exist_ok=True)
+    # os.mkdir(args['image_loc'], exist_ok=True)
 
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

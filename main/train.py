@@ -1,3 +1,5 @@
+import sys
+sys.path.append('')
 import torch
 import os
 import copy
@@ -25,10 +27,11 @@ def train_multigpu_loop(rank, world_size, args):
     ddp_setup(rank, world_size)
 
     model = DiT_adaLN_zero(in_dim=6).to(rank)
-    
+    start_epoch = 0
     if args['load_model'] is not None:
         model.load_state_dict(torch.load(args['load_model']))
         model.train()
+        start_epoch = args['start_epoch']
     model = DDP(model, device_ids=[rank], find_unused_parameters=True)
 
     diffusion = FlowMatchingMatrix(model, device=rank, gen_x0=args['gen_x0'], time_prob=args['time_prob'])
@@ -42,7 +45,7 @@ def train_multigpu_loop(rank, world_size, args):
     optimizer = torch.optim.Adam(model.parameters(), lr=args['lr'])
 
     print("Starting Training")
-    for epoch in range(args['load_model'], args['epochs']+1):
+    for epoch in range(start_epoch, args['epochs']+1):
         for i, (noisy_pose, clean_poses) in enumerate(data_loader):
             optimizer.zero_grad()
             clean_pose = clean_poses.to(rank).reshape(-1, 21, 3)
@@ -68,7 +71,8 @@ def train_multigpu_loop(rank, world_size, args):
 
             np.savez(f'./samples/training_samples/epoch_{epoch}.npz', pose_body=pose_body)
 
-    torch.save(model.state_dict(), f"./samples/training_models/model_final.pt")
+    torch.save(model.module.state_dict(), f"./samples/training_models/model_final.pt")
+    torch.save(ema_model.module.state_dict(), f"./samples/training_models/ema_model_final.pt")
 
     sampled = diffusion.sample(args['samples'], scale=8)
     pose_body = sampled.cpu().numpy()
@@ -87,10 +91,11 @@ def ddp_setup(rank, world_size):
 if __name__ == '__main__':
 
     args = {
-        'noisy': './dataset/amass/NOISY_POSES/gaussian_0.785/',
-        'clean': './dataset/amass/SAMPLED_POSES/',
+        'noisy': 'dataset/amass/NOISY_POSES/gaussian_0.785',
+        'clean': 'dataset/amass/SAMPLED_POSES',
 
         'load_model': None,
+        'start_epoch': 0,
 
         'gen_x0': 0.9,
         'time_prob': 0.25,
@@ -98,14 +103,14 @@ if __name__ == '__main__':
         'batch_size': 2,
         'no_samples': 225,
         'lr': 1e-4,
-        'epochs': 400,
+        'epochs': 0,
         'samples': 16,
 
         'world_size': torch.cuda.device_count(),
     }
     
-    os.mkdir('./samples', exist_ok=True)
-    os.mkdir('./samples/training_models', exist_ok=True)
-    os.mkdir('./samples/training_samples', exist_ok=True)
+    # os.mkdir('./samples', exist_ok=True)
+    # os.mkdir('./samples/training_models', exist_ok=True)
+    # os.mkdir('./samples/training_samples', exist_ok=True)
 
     train_multigpu(args)

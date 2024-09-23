@@ -86,8 +86,8 @@ if __name__ == '__main__':
         'world_size': torch.cuda.device_count(),
     }
 
-    os.mkdir('./samples', exist_ok=True)
-    os.mkdir('./samples/training_animal_models', exist_ok=True)
+    # os.mkdir('./samples', exist_ok=True)
+    # os.mkdir('./samples/training_animal_models', exist_ok=True)
 
     #os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
     # train_single(args)

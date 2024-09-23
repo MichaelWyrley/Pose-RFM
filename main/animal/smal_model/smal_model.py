@@ -22,7 +22,7 @@ def undo_chumpy(x):
     return x if isinstance(x, np.ndarray) else x.r
 
 class SMAL(nn.Module):
-    def __init__(self, pkl_path, pkl_data_path, shape_family_id=-1, dtype=torch.float):
+    def __init__(self, pkl_path, pkl_data_path, shape_family_id=-1, dtype=torch.float, sym_file = 'dataset/animal3d/MODELS/smpl_models/symIdx.pkl'):
         super(SMAL, self).__init__()
 
         # -- Load SMPL params --
@@ -39,7 +39,7 @@ class SMAL(nn.Module):
         self.faces = torch.from_numpy(self.f.astype(int))
 
         v_template = get_smal_template(model_name=pkl_path, data_name=pkl_data_path, shape_family_id=shape_family_id)
-        v, self.left_inds, self.right_inds, self.center_inds = align_smal_template_to_symmetry_axis(v_template, sym_file='dataset/animal3d/MODELS/smpl_models/symIdx.pkl')
+        v, self.left_inds, self.right_inds, self.center_inds = align_smal_template_to_symmetry_axis(v_template, sym_file=sym_file)
 
         # Mean template vertices
         self.v_template = Variable(

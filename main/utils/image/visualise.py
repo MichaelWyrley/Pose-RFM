@@ -49,19 +49,19 @@ def visualise(args):
     bm = BodyModel(args['model'], num_betas=num_betas, model_type='smplh').to(device)
     faces = c2c(bm.f)
 
-    time_length = bdata['poses_body'].shape[1]
+    time_length = min(bdata['pose_body'].shape[0], args['time_length'])
     # time_length = 16
     
-    print(bdata['poses_body'].shape)
+    print(bdata['pose_body'].shape)
     if 'betas' in bdata.keys():
         body_parms = {
-            'pose_body': torch.Tensor(bdata['poses_body'][0, :time_length].reshape(time_length, -1)[:, 3:66]).to(device), # controls the body
-            'betas': torch.Tensor(np.repeat(bdata['betas'][0, np.newaxis], repeats=time_length, axis=0)[:, :10]).to(device), # controls the body shape. Body shape is static
+            'pose_body': torch.Tensor(bdata['pose_body'][:time_length].reshape(time_length, -1)).to(device), # controls the body
+            'betas': torch.Tensor(np.repeat(bdata['betas'][np.newaxis], repeats=time_length, axis=0)[:, :num_betas]).to(device), # controls the body shape. Body shape is static
         }  
         body_pose_beta = bm(pose_body=body_parms['pose_body'], betas = body_parms['betas'])
     else:
         body_parms = {
-            'pose_body': torch.Tensor(bdata['poses_body'][0, :time_length].reshape(time_length, -1)[:, 3:66]).to(device), # controls the body
+            'pose_body': torch.Tensor(bdata['pose_body'][:time_length].reshape(time_length, -1)).to(device), # controls the body
         }  
         body_pose_beta = bm(pose_body=body_parms['pose_body'])
 
@@ -77,6 +77,7 @@ def visualise(args):
             img = vis_body_pose_beta(body_pose_beta, faces, mv, fId=i)
             img = img.astype(np.uint8)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
             images.append(torch.Tensor(img).permute(2,0,1))
         
         images_to_grid(images, args['image_loc'] + args['name'] + "grid.png", nrow=4)
@@ -101,10 +102,11 @@ if __name__ == '__main__':
         'image_loc': './samples/images/',
         'name': '',
         'print': True,
+        'time_length': 2,
 
         'save_grid': False,
     }
 
-    os.mkdir(args['image_loc'], exist_ok=True)
+    # os.mkdir(args['image_loc'], exist_ok=True)
 
     visualise(args)

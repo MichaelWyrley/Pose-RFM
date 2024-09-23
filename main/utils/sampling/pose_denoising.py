@@ -5,9 +5,9 @@ import os
 
 from main.flowMatchingModels.flowMatchingMatrix import FlowMatchingMatrix
 from main.vectorFieldModels.Transformer_adaLN_zero import DiT_adaLN_zero
-from main.utils.NRDF.data.dataloaders import PoseData
+from main.utils.NRDF.data.dataloaders import Pose_Noise_Data
 
-from main.utils.image.visualise import visualise
+from main.utils.image.visualise_torch3d import visualise
 import numpy as np
 
 def noise_pose(clean_pose, noise_level=0.1):
@@ -19,12 +19,13 @@ def noise_pose(clean_pose, noise_level=0.1):
 
 def denoise(diffusion, args):
 
-    data_set = PoseData(mode='train', clean_dir=args['clean'], batch_size=args['batch_size'], num_workers=6, num_pts=args['no_samples'], stage=1, flip=False, random_poses=False)
+    data_set = Pose_Noise_Data(mode='train', clean_dir=args['clean'], noisy_dir=args['noisy'], batch_size=args['batch_size'], num_workers=6, num_pts=args['no_samples'], stage=1, flip=False, random_poses=False)
     data_loader = data_set.get_loader()
 
     with torch.no_grad():
-        for i, poses in enumerate(data_loader):
-            clean_pose = poses.to(device).reshape(-1, 21, 3)
+        for i, (noisy_pose, clean_poses) in enumerate(data_loader):
+            clean_pose = clean_poses.to(device).reshape(-1, 21, 3)
+            # noisy_pose = noisy_pose.to(device).reshape(-1, 21, 3)
             noisy_pose = noise_pose(clean_pose, noise_level=args['noise_level'])
 
             sampled = diffusion.denoise_pose(noisy_pose, args['initial_timestep'], args['timesteps'], scale=args['scale'])
@@ -39,34 +40,38 @@ def denoise(diffusion, args):
     
 
 if __name__ == '__main__':
+
     args = {
-        'clean': './dataset/amass/SAMPLED_POSES/',
+        'clean': 'dataset/amass/SAMPLED_POSES/',
+        'noisy': 'dataset/amass/NOISY_POSES/gaussian_0.785/',
 
         'batch_size': 1,
         'no_samples': 16,
-        'scale': 2,
+        'scale': 3.5,
         'noise_level': 0.2,
 
-        'initial_timestep': 90,
-        'timesteps': 100,
-        'load_model': 'models/ema_model_400.pt',
+        'initial_timestep': 10,
+        'timesteps': 15,
+        'load_model': 'best_model/ema_model_1200.pt',
 
         'frame': 'samples/denoised/clean_pose/data_0.npz',
         'image_loc': 'samples/denoised/clean_pose/images/',
-        'model': './dataset/models/neutral/model.npz',
+        'model': 'dataset/models/neutral/model.npz',
 
         'name': '',
         'print': False,
+        'time_length': 2,
+        'output_obj': False,
         'save_grid': True,
 
     }
 
-    os.mkdir('samples/denoised/denoised_pose', exist_ok=True)
-    os.mkdir('samples/denoised/clean_pose', exist_ok=True)
-    os.mkdir('samples/denoised/initially_noisy', exist_ok=True)
-    os.mkdir('samples/denoised/denoised_pose/images', exist_ok=True)
-    os.mkdir('samples/denoised/clean_pose/images', exist_ok=True)
-    os.mkdir('samples/denoised/initially_noisy/images', exist_ok=True)
+    # os.mkdir('samples/denoised/denoised_pose', exist_ok=True)
+    # os.mkdir('samples/denoised/clean_pose', exist_ok=True)
+    # os.mkdir('samples/denoised/initially_noisy', exist_ok=True)
+    # os.mkdir('samples/denoised/denoised_pose/images', exist_ok=True)
+    # os.mkdir('samples/denoised/clean_pose/images', exist_ok=True)
+    # os.mkdir('samples/denoised/initially_noisy/images', exist_ok=True)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(device)

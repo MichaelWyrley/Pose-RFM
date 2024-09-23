@@ -1,9 +1,7 @@
-/models/*
-/images/*
 /dataset/*
 /samples/*
 /experiments/samples/*
-/working_models/*
+/experiments/current_tests/*
 
 
 /best_model/*

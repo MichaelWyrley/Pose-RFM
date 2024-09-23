@@ -1,4 +1,6 @@
 # MODIFIED FROM https://github.com/facebookresearch/DiT/blob/main/models.py
+import sys
+sys.path.append('')
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

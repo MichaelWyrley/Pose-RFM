@@ -44,8 +44,6 @@ class Renderer(nn.Module):
         )
 
     def forward(self, verts, faces):
-        verts = verts.unsqueeze(0)
-        faces = faces.unsqueeze(0)
         verts_rgb = torch.ones_like(verts)  # (1, V, 3)
         textures = TexturesVertex(verts_features=verts_rgb.to(verts.device))
 
@@ -56,8 +54,6 @@ class Renderer(nn.Module):
         return img.reshape(self.image_size[0], self.image_size[1], -1)
 
     def save_obj(self, verts, faces, save_loc):
-        verts = verts.unsqueeze(0)
-        faces = faces.unsqueeze(0)
         verts_rgb = torch.ones_like(verts)  # (1, V, 3)
         textures = TexturesVertex(verts_features=verts_rgb.to(verts.device))
 

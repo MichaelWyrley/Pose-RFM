@@ -2,10 +2,10 @@ import sys
 sys.path.append('')
 import torch
 
-from flowMatchingModels.flowMatchingMatrix import FlowMatchingMatrix
-from vectorFieldModels.Transformer import DiT_adaLN_zero
+from main.flowMatchingModels.flowMatchingMatrix import FlowMatchingMatrix
+from main.vectorFieldModels.Transformer_adaLN_zero import DiT_adaLN_zero
 
-from utils.NRDF.utils.transforms import quaternion_to_axis_angle
+from main.utils.NRDF.utils.transforms import quaternion_to_axis_angle
 import numpy as np
 import os
 
@@ -42,23 +42,23 @@ def sample_single(diffusion,args):
 if __name__ == '__main__':
     args = {
         'samples': 16,
-        'sample_timestep': 52,
+        'sample_timestep': 35,
         'print': True,
-        'load_model': 'models/model_700.pt',
+        'load_model': 'best_model/ema_model_1200.pt',
         'scale': 12,
         'sample_dir': 'samples/sample_list/'
     }
 
-    os.mkdir(args['sample_dir'], exist_ok=True)
+    # os.mkdir(args['sample_dir'], exist_ok=True)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(device)
     # model = UNet(in_channels=15, out_channels=3, emb_dimention=256, img_size=32, num_heads=4, num_classes=10, condition_prob=0.25).to(device)
     model = DiT_adaLN_zero().to(device)
-    model.load_state_dict(torch.load(args['directory'] + args['load_model']))
+    model.load_state_dict(torch.load(args['load_model']))
     model.eval()
 
     diffusion = FlowMatchingMatrix(model, device=device)
 
-    sample_single(args)
+    sample_single(diffusion, args)
 

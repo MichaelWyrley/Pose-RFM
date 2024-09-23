@@ -15,7 +15,7 @@ from PIL import ImageOps
 
 from human_body_prior.tools.omni_tools import copy2cpu as c2c
 from os import path as osp
-from main.utils.image.visualise import images_to_grid, vis_body_joints, vis_body_pose_beta, vis_body_pose_hand
+from main.utils.image.visualise_torch3d import images_to_grid
 from main.utils.image.Renderer import Renderer
 import pickle as pkl
 
@@ -27,7 +27,7 @@ from main.animal.smal_model.smal_model import SMAL
 
 label_to_betas = [20, 5, 38, 33, 31]
 
-def initialise_body(body_model_file, body_data_file):
+def initialise_body(body_model_file, body_data_file, sym_file):
     smal_params = {
         'betas' : torch.zeros(1, 41),
         'joint_rotations' : torch.zeros(1, 34, 3),
@@ -36,7 +36,7 @@ def initialise_body(body_model_file, body_data_file):
     }
     smal_params['global_rotation'][:,:,0] = -np.pi / 2
 
-    smal_model = SMAL(body_model_file, body_data_file)
+    smal_model = SMAL(body_model_file, body_data_file, sym_file=sym_file)
 
     with open(body_data_file, 'rb') as f:
         u = pkl._Unpickler(f)
@@ -51,7 +51,7 @@ def visualise(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     bdata = np.load(args['frame'])
-    time_length = 25
+    time_length = min(args['time_length'], bdata['pose_body'].shape[0])
 
     imw, imh=800, 800
     renerer = Renderer(imw, imh)
@@ -59,7 +59,7 @@ def visualise(args):
     pose_body = torch.from_numpy(bdata['pose_body']).to(torch.float32) # controls the body
     categories = bdata['categories'][:time_length]
 
-    smal_model, animal_betas, smal_params = initialise_body(args['model'], args['model_data'])
+    smal_model, animal_betas, smal_params = initialise_body(args['model'], args['model_data'], args['sym_file'])
 
     images = []
     for i in range(time_length):
@@ -72,10 +72,9 @@ def visualise(args):
 
         # normalize by center of mass
         verts = verts - torch.mean(verts, dim = 1, keepdim=True)
-
-        img = renerer(verts, smal_model.faces)
+        img = renerer(verts, smal_model.faces.unsqueeze(0))
         if args['output_obj']:
-                renerer.save_ob(verts, smal_model.faces, args['image_loc'] + "{:03d}.obj".format(i))
+                renerer.save_obj(verts, smal_model.faces.unsqueeze(0), args['image_loc'] + "{:03d}.obj".format(i))
     
         images.append(img.permute(2,0,1))
 
@@ -88,11 +87,13 @@ if __name__ == '__main__':
         'frame': 'dataset/animal3d/SAMPLED_POSES/test.npz',
         'model': 'dataset/animal3d/MODELS/smpl_models/my_smpl_00781_4_all.pkl',
         'model_data': 'dataset/animal3d/MODELS/smpl_models/my_smpl_data_00781_4_all.pkl',
-        'image_loc': 'samples/animal_images',
+        'sym_file': 'dataset/animal3d/MODELS/smpl_models/symIdx.pkl',
+        'image_loc': 'samples/animal_images/',
+        'time_length': 15,
         'name': '',
         'output_obj': True,
     }
 
-    os.makedirs(args['image_loc'], exist_ok=True)
+    # os.makedirs(args['image_loc'], exist_ok=True)
 
     visualise(args)

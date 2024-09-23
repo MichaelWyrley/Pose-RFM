@@ -23,10 +23,10 @@ def images_to_grid(images, path, **kwargs):
     im.save(path)
 
 def render_obj(render, verts, faces, save_loc):
-    render.save_obj(verts, faces, save_loc)
+    render.save_obj(verts.unsqueeze(0), faces.unsqueeze(0), save_loc)
 
 def render_img(render, verts, faces):
-    img = render(verts, faces)
+    img = render(verts.unsqueeze(0), faces.unsqueeze(0))
     return img
 
 def visualise(args):
@@ -40,17 +40,18 @@ def visualise(args):
     bm = BodyModel(args['model'], num_betas=num_betas, model_type='smplh').to(device)
     faces = torch.Tensor(c2c(bm.f))
 
-    time_length = 2
-    print(bdata['poses_body'].shape)
+    # time_length = bdata['pose_body'].shape[0]
+    time_length = min(bdata['pose_body'].shape[0], args['time_length'])
+    # print(bdata['pose_body'].shape)
     if 'betas' in bdata.keys():
         body_parms = {
-            'pose_body': torch.Tensor(bdata['poses_body'][0, :time_length].reshape(time_length, -1)[:, 3:66]).to(device), # controls the body
-            'betas': torch.Tensor(np.repeat(bdata['betas'][0, np.newaxis], repeats=time_length, axis=0)[:, :10]).to(device), # controls the body shape. Body shape is static
+            'pose_body': torch.Tensor(bdata['pose_body'][:time_length].reshape(time_length, -1)).to(device), # controls the body
+            'betas': torch.Tensor(np.repeat(bdata['betas'][np.newaxis], repeats=time_length, axis=0)[:, :num_betas]).to(device), # controls the body shape. Body shape is static
         }  
         body_pose_params = bm(pose_body=body_parms['pose_body'], betas = body_parms['betas'])
     else:
         body_parms = {
-            'pose_body': torch.Tensor(bdata['poses_body'][0, :time_length].reshape(time_length, -1)[:, 3:66]).to(device), # controls the body
+            'pose_body': torch.Tensor(bdata['pose_body'][:time_length].reshape(time_length, -1)).to(device), # controls the body
         }  
         body_pose_params = bm(pose_body=body_parms['pose_body'])
 
@@ -66,11 +67,10 @@ def visualise(args):
         images = []
         
         for i in range(time_length):
-            verts = (body_pose_params.v[i] - torch.mean(body_pose_params.v[i], dim = 1, keepdim=True)).cpu()
+            verts = body_pose_params.v[i].cpu()
             img = render_img(renerer, verts, faces)
             if args['output_obj']:
                 render_obj(renerer, verts, faces, args['image_loc'] + "{:03d}.obj".format(i))
-
             images.append(img.permute(2,0,1))
         
         images_to_grid(images, args['image_loc'] + args['name'] + "grid.png", nrow=4)
@@ -78,10 +78,11 @@ def visualise(args):
     else:
 
         for i in range(time_length):
-            verts = (body_pose_params.v[i] - torch.mean(body_pose_params.v[i], dim = 1, keepdim=True)).cpu()
+            verts = body_pose_params.v[i].cpu()
             img = render_img(renerer, verts, faces)
             if args['output_obj']:
                 render_obj(renerer, verts, faces, args['image_loc'] + "{:03d}.obj".format(i))
+
 
             plt.imsave(args['image_loc'] + "{:03d}.png".format(i), img.numpy())
             print(f"saved image {i}")
@@ -93,15 +94,16 @@ if __name__ == '__main__':
     args = {
         'frame': 'samples/gen_video/data_0.npz',
         'model': './dataset/models/neutral/model.npz',
-        'image_loc': 'samples/gen_video/images/',
+        'image_loc': './samples/images/',
         'name': '',
         'print': True,
+        'time_length': 2,
 
         'output_obj': True,
 
         'save_grid': False,
     }
 
-    os.mkdir(args['image_loc'], exist_ok=True)
+    # os.mkdir(args['image_loc'], exist_ok=True)
 
     visualise(args)

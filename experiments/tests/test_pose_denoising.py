@@ -184,14 +184,13 @@ if __name__ == "__main__":
         # 'support_dir': '/vol/bitbucket/mew23/individual_project/',
         'noisy': 'dataset/amass/NOISY_POSES/examples/noisy_pose.npz',
 
-        'save_location': 'experiments/samples/denoised_pose/',
         'model': './dataset/models/neutral/model.npz',
 
         'faiss_model': 'dataset/amass/FAISS_MODEL',
         'k-faiss': 1000,
         'k-dist': 1,
 
-        'load_model': 'working_models/noised_pose_90/ema_model_1200.pt',
+        'load_model': 'best_model/ema_model_1200.pt',
         'dataset_name': 'pose_body',
 
         'batch_size': 500,

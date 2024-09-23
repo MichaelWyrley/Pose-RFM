@@ -1,7 +1,6 @@
-import os
 import sys
-# add the current working directory so this can be run from the github repo root !!
-sys.path.append(os.getcwd())
+sys.path.append('')
+import os
 
 import torch
 import matplotlib.pyplot as plt
@@ -16,15 +15,12 @@ def sample_model(diffusion, args):
     for i in range(args['no_samples']):
         sampled = diffusion.sample(args['samples'], args['sample_timestep'], scale=args['scale'])
         pose_body = sampled.cpu().numpy()
-        np.savez(args['directory'] + args['save_location'] + f'{i}.npz', pose_body=pose_body)
+        np.savez(args['save_location'] + f'{i}.npz', pose_body=pose_body)
         print(f"done sampling: {i}" )
-    
-def sample_dataset(args):
-    pass
+
 
 if __name__ == '__main__':
     args = {
-        'directory': '/vol/bitbucket/mew23/individual-project/',
         'save_location': 'experiments/samples/generated_samples/', 
         'samples': 500,
         'no_samples': 20,
@@ -38,7 +34,7 @@ if __name__ == '__main__':
     print(device)
     # model = UNet(in_channels=15, out_channels=3, emb_dimention=256, img_size=32, num_heads=4, num_classes=10, condition_prob=0.25).to(device)
     model = DiT_adaLN_zero().to(device)
-    model.load_state_dict(torch.load(args['directory'] + args['load_model']))
+    model.load_state_dict(torch.load(args['load_model']))
     model.eval()
 
     diffusion = FlowMatchingMatrix(model, device=device)
