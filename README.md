@@ -68,7 +68,8 @@ The parameters can be modified in the config/train.py with these parameters
 - 'lr': The learning rate of the optimiser
 - 'epochs': The number of epochs used to train the model
 - 'samples': The number of arbitray generated poses to make at every 50th epoch
-- 'load_model': The model at which to start the training (if starting from nothing set to 0)
+- 'load_model': The model at which to start the training (if starting from nothing set to None)
+- 'start_epoch': The epoch that training starts at (default should be 0)
 - 'world_size': The amount of GPUs available (leave as default: torch.cuda.device_count(), unless have specific needs)
 
 ## Generate Poses

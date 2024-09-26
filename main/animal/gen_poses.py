@@ -53,9 +53,9 @@ def sample_full_for_video(diffusion, labels,args):
 if __name__ == '__main__':
     args = {
         'samples': 25,
-        'sample_timestep': 40,
+        'sample_timestep': 60,
         'load_model': 'best_model/animal_ema_model_800.pt',
-        'scale': 6,
+        'scale': 8,
         'sample_dir': 'samples/animal_samples/',   
         'frame': 'samples/animal_samples/sample_0.npz',
         'image_loc': 'samples/animal_images/',
@@ -65,7 +65,7 @@ if __name__ == '__main__':
         'sym_file': 'dataset/animal3d/MODELS/smpl_models/symIdx.pkl',
 
         'print': True,
-        'time_length': 15
+        'time_length': 9999,
         'output_obj': True,
         'name': '',
     }
@@ -84,5 +84,5 @@ if __name__ == '__main__':
 
     labels = torch.Tensor([0,0,0,0,0,1,1,1,1,1,2,2,2,2,2,3,3,3,3,3,4,4,4,4,4]).to(int).to(device)
     # labels = torch.Tensor([0,0,0,1,1,1,4,4,4]).to(int).to(device)
-    sample_grid_video(diffusion, labels, args)
+    sample_grid(diffusion, labels, args)
 

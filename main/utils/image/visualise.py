@@ -49,14 +49,14 @@ def visualise(args):
     bm = BodyModel(args['model'], num_betas=num_betas, model_type='smplh').to(device)
     faces = c2c(bm.f)
 
-    time_length = min(bdata['pose_body'].shape[0], args['time_length'])
+    time_length = min(bdata['pose_body'].shape[1], args['time_length'])
     # time_length = 16
     
     print(bdata['pose_body'].shape)
     if 'betas' in bdata.keys():
         body_parms = {
-            'pose_body': torch.Tensor(bdata['pose_body'][:time_length].reshape(time_length, -1)).to(device), # controls the body
-            'betas': torch.Tensor(np.repeat(bdata['betas'][np.newaxis], repeats=time_length, axis=0)[:, :num_betas]).to(device), # controls the body shape. Body shape is static
+            'pose_body': torch.Tensor(bdata['pose_body'][0, :time_length, 3:66].reshape(time_length, -1)).to(device), # controls the body
+            'betas': torch.Tensor(np.repeat(bdata['betas'][0, np.newaxis], repeats=time_length, axis=0)[:, :num_betas]).to(device), # controls the body shape. Body shape is static
         }  
         body_pose_beta = bm(pose_body=body_parms['pose_body'], betas = body_parms['betas'])
     else:
@@ -97,12 +97,12 @@ def visualise(args):
 if __name__ == '__main__':
     args = {
         # 'frame': 'dataset/3DPW/smpl_poses/downtown_stairs_00.npz',
-        'frame': 'dataset/3DPW/npz_poses/ground_truth/downtown_stairs_00.npz',
-        'model': './dataset/models/neutral/model.npz',
+        'frame': 'dataset/3DPW/npz_poses/ground_truth/downtown_walkUphill_00.npz',
+        'model': 'dataset/models/neutral/model.npz',
         'image_loc': './samples/images/',
         'name': '',
         'print': True,
-        'time_length': 2,
+        'time_length': 500,
 
         'save_grid': False,
     }

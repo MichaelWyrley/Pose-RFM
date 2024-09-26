@@ -25,7 +25,8 @@ import pickle as pkl
 from main.animal.smal_model.smal_model import SMAL
 # from notmycode.Renderer import Renderer
 
-label_to_betas = [20, 5, 38, 33, 31]
+# label_to_betas = [20, 5, 38, 33, 31]
+label_to_betas = [22, 0, 38, 33, 37]
 
 def initialise_body(body_model_file, body_data_file, sym_file):
     smal_params = {
@@ -63,6 +64,7 @@ def visualise(args):
 
     images = []
     for i in range(time_length):
+        print(f"generating image: {i}")
         smal_params['betas'] = animal_betas[label_to_betas[categories[i]]].unsqueeze(0)
         smal_params['joint_rotations'] = pose_body[i].unsqueeze(0)
 
@@ -78,7 +80,8 @@ def visualise(args):
     
         images.append(img.permute(2,0,1))
 
-    images_to_grid(images, args['image_loc'] + args['name'] + "grid.png", nrow=5)
+    images_to_grid(images, args['image_loc'] + args['name'] + "grid.pdf", nrow=5)
+
 
 
 
@@ -89,11 +92,12 @@ if __name__ == '__main__':
         'model_data': 'dataset/animal3d/MODELS/smpl_models/my_smpl_data_00781_4_all.pkl',
         'sym_file': 'dataset/animal3d/MODELS/smpl_models/symIdx.pkl',
         'image_loc': 'samples/animal_images/',
-        'time_length': 15,
+        'time_length': 1,
         'name': '',
-        'output_obj': True,
+        'output_obj': False,
     }
 
     # os.makedirs(args['image_loc'], exist_ok=True)
 
     visualise(args)
+    # animal_types(args)

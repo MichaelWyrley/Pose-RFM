@@ -47,11 +47,11 @@ if __name__ == '__main__':
 
         'batch_size': 1,
         'no_samples': 16,
-        'scale': 3.5,
-        'noise_level': 0.2,
+        'noise_level': 0.15,
 
         'initial_timestep': 10,
         'timesteps': 15,
+        'scale': 1,
         'load_model': 'best_model/ema_model_1200.pt',
 
         'frame': 'samples/denoised/clean_pose/data_0.npz',
@@ -60,7 +60,7 @@ if __name__ == '__main__':
 
         'name': '',
         'print': False,
-        'time_length': 2,
+        'time_length': 600,
         'output_obj': False,
         'save_grid': True,
 

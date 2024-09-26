@@ -1,8 +1,7 @@
-# import os
-# os.environ['PYOPENGL_PLATFORM'] = 'egl'
-# import sys
-# # add the current working directory so this can be run from the github repo root !!
-# sys.path.append(os.getcwd())
+
+import sys
+# add the current working directory so this can be run from the github repo root !!
+sys.path.append("")
 import torch
 import numpy as np
 import glob
@@ -55,35 +54,39 @@ def rigid_align(A, B):
 # modified from https://github.com/caizhongang/SMPLer-X/blob/main/data/humandata.py#L643
 def get_mpjpe(gtf_poses, genf_poses):
     joint_out_body_align = rigid_align(genf_poses, gtf_poses)
-    return np.sqrt(np.sum((joint_out_body_align - gtf_poses) ** 2, 1)).mean() * 1000
+    dist =  np.sqrt(np.sum((joint_out_body_align - gtf_poses) ** 2, 1)) * 1000
+
+    return dist
 
 # modified from https://github.com/caizhongang/SMPLer-X/blob/main/data/humandata.py#593
 def get_pve(gtf_vert, genf_verts):
     # MPVPE from all vertices
     mesh_out_align = rigid_align(genf_verts, gtf_vert)
-    pa_mpvpe = np.sqrt(np.sum((mesh_out_align - gtf_vert) ** 2, 1)).mean() * 1000
+    pa_mpvpe = np.sqrt(np.sum((mesh_out_align - gtf_vert) ** 2, 1)) * 1000
 
-    return pa_mpvpe
+
+    return pa_mpvpe.mean()
 
 def get_pck(gtf_poses, genf_poses):
-    distance = np.sqrt(np.sum((genf_poses - gtf_poses) ** 2, 1)) * 1000
-    percent = (distance < 50).sum() / len(distance)
+    joint_out_body_align = rigid_align(genf_poses, gtf_poses)
+    distance = np.sqrt(np.sum((joint_out_body_align - gtf_poses) ** 2, 1)) * 1000
+    
+    percent = (distance < 50).mean()
 
     return percent
 
 
 
-def calculate_metrics(ground_truth_dir, generated_dir, args, device='cuda'):
+def calculate_metrics(ground_truth_dir, generated_dir, args, ground_truth = False, device='cuda'):
     
     ground_truth_files = sorted(glob.glob(ground_truth_dir + '*.npz'))
     generated_files = sorted(glob.glob(generated_dir + '*.npz'))
 
-    print(ground_truth_files, generated_files)
-
     results = {'pa_mpjpe': [], 'pa_mpvpe': [], 'pck': [] }
 
     for (gtf, genf) in zip(ground_truth_files, generated_files):
-        print("Calculateing for:", gtf.split('/')[-1].split('.')[0])
+        print("Calculateing for:", gtf.split('/')[-1].split('.')[0], genf.split('/')[-1].split('.')[0])
+        result = {'pa_mpjpe': [], 'pa_mpvpe': [], 'pck': [] }
 
         ground_truth_sequence = np.load(gtf, allow_pickle=True)
         generated_sequence = np.load(genf, allow_pickle=True)
@@ -93,23 +96,28 @@ def calculate_metrics(ground_truth_dir, generated_dir, args, device='cuda'):
 
         genf_poses = np.array(generated_sequence['body_pose'])[:, :63]
         genf_betas = np.array(generated_sequence['betas'])[:10]
-        
+
         gtf_poses = pose_to_vert(gtf_poses, gtf_betas, args)
-        genf_poses = pose_to_vert(genf_poses, gtf_betas, args)
+        genf_poses = pose_to_vert(genf_poses, genf_betas, args)
+            
 
         for i in range(gtf_poses.Jtr.shape[0]):
-            results['pa_mpjpe'].append( get_mpjpe(gtf_poses.Jtr[i].cpu().detach().numpy()[:22], genf_poses.Jtr[i].cpu().detach().numpy()[:22]))
-            results['pa_mpvpe'].append( get_pve(gtf_poses.v[i].cpu().detach().numpy(), genf_poses.v[i].cpu().detach().numpy()))
-            results['pck'].append(      get_pck(gtf_poses.Jtr[i].cpu().detach().numpy()[:22], genf_poses.Jtr[i].cpu().detach().numpy()[:22]))
+            result['pa_mpjpe'].append( get_mpjpe(gtf_poses.Jtr[i].cpu().detach().numpy()[:22], genf_poses.Jtr[i].cpu().detach().numpy()[:22]))
+            result['pa_mpvpe'].append( get_pve(gtf_poses.v[i].cpu().detach().numpy(), genf_poses.v[i].cpu().detach().numpy()))
+            result['pck'].append(      get_pck(gtf_poses.Jtr[i].cpu().detach().numpy()[:22], genf_poses.Jtr[i].cpu().detach().numpy()[:22]))
+
+        results['pa_mpjpe'].append(np.array( result['pa_mpjpe']).mean())
+        results['pa_mpvpe'].append(np.array( result['pa_mpvpe']).mean())
+        results['pck'].append(np.array( result['pck']).mean())
 
 
     results['pa_mpjpe'] = np.array( results['pa_mpjpe'])
     results['pa_mpvpe'] = np.array( results['pa_mpvpe'])
     results['pck'] = np.array( results['pck'])
     
-    print('pa_mpjpe:', results['pa_mpjpe'].mean())
-    print('pa_mpvpe:', results['pa_mpvpe'].mean())
-    print('pck:',      results['pck'].mean())
+    print('pa_mpjpe:', results['pa_mpjpe'].mean(),  results['pa_mpjpe'])
+    print('pa_mpvpe:', results['pa_mpvpe'].mean(),  results['pa_mpvpe'])
+    print('pck:',      results['pck'].mean(),       results['pck'])
 
     return results
 
@@ -133,10 +141,12 @@ def generate_denoised_values(args, device='cuda'):
             batched_noisy_poses = torch.split(noisy_poses, args['batch_size'])
             clean_poses = []
             for pose in batched_noisy_poses:
-                clean_pose = diffusion.denoise_pose(pose, args['initial_timestep'], args['timesteps'], args['scale']).cpu().detach().numpy()
-                clean_poses.append(clean_pose)
+                clean_pose = diffusion.denoise_pose(pose, args['initial_timestep'], args['timesteps'], args['scale'])
+                distance = torch.sqrt(torch.sum((clean_pose - pose) ** 2, 2))[:, :, None]
 
-            clean_poses = np.concatenate(clean_poses, axis=0)
+                clean_poses.append((pose + args['regularising_factor']*distance).cpu().detach().numpy())
+
+            clean_poses = np.concatenate(clean_poses, axis=0).reshape(noisy_poses.shape[0], -1)
             np.savez(args['denoised_directory'] + name, body_pose=clean_poses, betas=cdata['betas'])
 
 
@@ -145,22 +155,23 @@ if __name__ == '__main__':
 
         'load_model': 'best_model/ema_model_1200.pt',
 
-        'ground_truth_directory': '/vol/bitbucket/mew23/individual-project/dataset/3DPW/npz_poses/ground_truth/',
-        'generated_directory': 'dataset/3DPW/npz_poses/generated_smpl/',
+        'ground_truth_directory': 'dataset/3DPW/npz_poses/ground_truth/',
+        'generated_directory': 'dataset/3DPW/smpl_poses/',
         'denoised_directory': 'dataset/3DPW/npz_poses/denoised_smpl/',
 
         'batch_size': 500,
         'initial_timestep': 10,
         'timesteps': 15,
-        'scale': 4,
+        'scale': 1,
+        'regularising_factor': 0.03,
         
         
-        'model': './dataset/models/neutral/model.npz',
+        'model': 'dataset/models/neutral/model.npz',
     }
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     generate_denoised_values(args, device)
-    result_gt = calculate_metrics(args['ground_truth_directory'], args['generated_directory'], args, device)
-    result_denoised = calculate_metrics(args['ground_truth_directory'], args['denoised_directory'], args, device)
+    result_gt = calculate_metrics(args['ground_truth_directory'], args['generated_directory'], args, ground_truth = True, device=device)
+    result_denoised = calculate_metrics(args['ground_truth_directory'], args['denoised_directory'], args, ground_truth=False,  device=device)
 
     

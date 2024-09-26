@@ -20,9 +20,24 @@ def reduce_data(data, tsne):
     for i, d in enumerate(data):
         print("starting for timestep:", i)
         # reduced_data = tsne.fit_transform(d)
-        reduced_data = tsne.fit(d)
-        reduced_data.affinities.set_perplexities([50])
-        reduced_data = reduced_data.optimize(250)
+        affinities = openTSNE.affinity.Multiscale(
+            d,
+            perplexities=[30, 250],
+            metric="cosine",
+            n_jobs=-1,
+            random_state=42,
+        )
+        init = openTSNE.initialization.pca(d, random_state=42)
+        reduced_data = tsne.fit(
+            affinities=affinities,
+            initialization=init,
+        )
+        # reduced_data = reduced_data.optimize(250)
+
+        # reduced_data = tsne.fit(d)
+        # reduced_data.affinities.set_perplexities([50])
+        # reduced_data = reduced_data.optimize(250, exaggeration=4)
+
 
         full_data.append(reduced_data)
 
@@ -42,19 +57,34 @@ def gen_heatmap(data, save_loc):
         plt.axis('off')
         plt.savefig(save_loc +"/{:03d}.png".format(i), bbox_inches='tight')
         plt.clf()
+
+def load_heatmap(save_loc): 
+    data = np.load(save_loc + "/data.npz")['arr_0']
+
+    plt.figure(figsize=(20, 20), dpi=80)
     
+    for i in range(data.shape[0]):
+        print("saving denoise step {:03d}".format(i))
+
+        sns.set_style("white")
+        sns.kdeplot(x=data[i,:,0], y=data[i,:,1], fill=False, thresh=0, levels=20)
+        plt.axis('off')
+        plt.savefig(save_loc +"/{:03d}.png".format(i), bbox_inches='tight')
+        plt.clf()
 
 def compute_heatmaps(diffusion, args):
     full_data = []
 
     # tsne = TSNE(n_components=2, perplexity = 20, early_exaggeration=12, n_iter_without_progress= 500, max_iter= 10000, method='exact')
-    tsne = openTSNE.TSNE(
-            perplexity=500,
-            initialization="pca",
-            metric="cosine",
-            n_jobs=8,
-            random_state=3,
-        )
+    # tsne = openTSNE.TSNE(
+    #         perplexity=500,
+    #         initialization="pca",
+    #         metric="cosine",
+    #         random_state=3,
+    #         exaggeration=12,
+    #         n_jobs=-1,
+    #     )
+    tsne = openTSNE.TSNE(n_jobs=-1)
 
     for bs in range(0, args['samples'], args['batch_size']):
         print("starting batch", bs//args['batch_size'])
@@ -69,10 +99,10 @@ def compute_heatmaps(diffusion, args):
 
 if __name__ == '__main__':
     args = {
-        'sample_timestep': 35,
-        'scale': 3.5,
+        'sample_timestep': 25,
+        'scale': 3.8,
 
-        'samples': 5000,
+        'samples': 6000,
         'batch_size': 600,
 
         'load_model': 'best_model/ema_model_1200.pt',
@@ -87,6 +117,5 @@ if __name__ == '__main__':
     model.eval()
 
     diffusion = FlowMatchingMatrix(model, device=device)
-
     compute_heatmaps(diffusion, args)
 

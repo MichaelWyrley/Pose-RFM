@@ -12,7 +12,7 @@ import os
 
 # Sample and generate images for the final poses from the model 
 def sample_grid(diffusion, args):
-    sample_single(diffusion, args)
+    # sample_single(diffusion, args)
     visualise(args)
 
 # Sample and generate images for the full path poses from the model 
@@ -35,21 +35,21 @@ if __name__ == '__main__':
 
     args = {
         'samples': 16,
-        'sample_timestep': 35,
+        'sample_timestep': 25,
         'load_model': 'best_model/ema_model_1200.pt',
-        'scale': 3.5,
+        'scale': 3.8,
         'sample_dir': 'samples/sample_list/',
         'name': '',
      
         'frame': 'samples/sample_list/sample_0.npz',
-        'model': 'dataset/models/neutral/model.npz',
+        'model': '../individual-project/dataset/models/neutral/model.npz',
         'image_loc': './samples/images/',
         'print': True,
 
         'output_obj': True,
         'time_length': 10000,
 
-        'save_grid': False,
+        'save_grid': True,
     }
 
     # os.mkdirs(args['sample_dir'], exist_ok=True)

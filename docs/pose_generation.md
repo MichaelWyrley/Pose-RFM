@@ -16,7 +16,8 @@ They all take the flow matching model instance (which should contain the Vector 
 
 ## Generating Images From Poses
 
-You can visualise your generated poses using the `main/utils/image/visualise.py` file
+You can visualise your generated poses using either `main/utils/image/visualise.py` or `main/utils/image/visualise_torch3d.py` file.
+`main/utils/image/visualise.py` produces results slightly quicker from testing wheres `main/utils/image/visualise_torch3d.py` allows for the output of obj files
 It has a function called `visualise` which will read in the poses and ouput .png files of them, it takes arguments:
 
 - 'frame': The pose file wanting to be visualised (relative to the 'directory' value)
@@ -24,6 +25,8 @@ It has a function called `visualise` which will read in the poses and ouput .png
 - 'image_loc': The place to save the images (relative to the 'directory' value)
 - 'name': An extra naming parameter for grids if needed (default should be '')
 - 'print': Output information about the generation process
+- 'time_length': The amount of poses that need to be generated (if you want to generate all poses in a file set to a value greater than the number of poses in the file)
+- 'output_obj': Boolean value to allow the ouput of obj files if using visualise_torch3d.py,
 - 'save_grid': Boolean value to say if you should save the images as single images or as a grid of images
 
 ## Generating Both at the same Time
@@ -43,6 +46,8 @@ They all take the flow matching model instance (which should contain the Vector 
 - 'model': The location of the SMPL model wanting to be used (All images in project generated using nutral model)
 - 'image_loc': The place to save the images (relative to the 'directory' value)
 - 'print': Output information about the generation process
+- 'time_length': The amount of poses that need to be generated (if you want to generate all poses in a file set to a value greater than the number of poses in the file)
+- 'output_obj': Boolean value to allow the ouput of obj files if using visualise_tor
 - 'save_grid': Boolean value to say if you should save the images as single images or as a grid of images
 - 'sample_single': Sample the final timestep
 
@@ -70,6 +75,8 @@ It takes the flow matching object and arguments:
 - 'model': The location of the SMPL model wanting to be used (All images in project generated using nutral model)
 - 'name': An extra naming parameter for grids if needed (default should be '')
 - 'print': Output information about the generation process
+- 'time_length': The amount of poses that need to be generated (if you want to generate all poses in a file set to a value greater than the number of poses in the file)
+- 'output_obj': Boolean value to allow the ouput of obj files if using visualise_tor
 - 'save_grid': Boolean value to say if you should save the images as single images or as a grid of images
 
 # Masked Joint Generation
@@ -91,4 +98,6 @@ It takes the flow matching object and arguments:
 - 'model': The location of the SMPL model wanting to be used (All images in project generated using nutral model)
 - 'name': An extra naming parameter for grids if needed (default should be '')
 - 'print': Output information about the generation process
+- 'time_length': The amount of poses that need to be generated (if you want to generate all poses in a file set to a value greater than the number of poses in the file)
+- 'output_obj': Boolean value to allow the ouput of obj files if using visualise_tor
 - 'save_grid': Boolean value to say if you should save the images as single images or as a grid of images
