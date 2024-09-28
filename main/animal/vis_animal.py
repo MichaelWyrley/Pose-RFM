@@ -55,7 +55,7 @@ def visualise(args):
     time_length = min(args['time_length'], bdata['pose_body'].shape[0])
 
     imw, imh=800, 800
-    renerer = Renderer(imw, imh)
+    renerer = Renderer(imw, imh, device)
     
     pose_body = torch.from_numpy(bdata['pose_body']).to(torch.float32) # controls the body
     categories = bdata['categories'][:time_length]

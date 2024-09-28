@@ -8,35 +8,22 @@ from main.vectorFieldModels.Transformer_adaLN_zero import DiT_adaLN_zero
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
-import openTSNE
+# import openTSNE
+from cuml.manifold import UMAP
+from cuml.common.device_selection import using_device_type
 
 def sample_dataset(diffusion, no_samples, timestep = 35, scale = 3.5):
     _, sample_list = diffusion.sample_full(no_samples, timestep, scale=scale)
     return sample_list.reshape(sample_list.shape[0], sample_list.shape[1], -1).cpu().detach().numpy()
 
-def reduce_data(data, tsne):
+def reduce_data(data, umap):
     full_data = []
 
     for i, d in enumerate(data):
         print("starting for timestep:", i)
-        # reduced_data = tsne.fit_transform(d)
-        affinities = openTSNE.affinity.Multiscale(
-            d,
-            perplexities=[30, 250],
-            metric="cosine",
-            n_jobs=-1,
-            random_state=42,
-        )
-        init = openTSNE.initialization.pca(d, random_state=42)
-        reduced_data = tsne.fit(
-            affinities=affinities,
-            initialization=init,
-        )
-        # reduced_data = reduced_data.optimize(250)
 
-        # reduced_data = tsne.fit(d)
-        # reduced_data.affinities.set_perplexities([50])
-        # reduced_data = reduced_data.optimize(250, exaggeration=4)
+        with using_device_type('gpu'):
+            reduced_data = umap.fit_transform(d)
 
 
         full_data.append(reduced_data)
@@ -75,16 +62,12 @@ def load_heatmap(save_loc):
 def compute_heatmaps(diffusion, args):
     full_data = []
 
-    # tsne = TSNE(n_components=2, perplexity = 20, early_exaggeration=12, n_iter_without_progress= 500, max_iter= 10000, method='exact')
-    # tsne = openTSNE.TSNE(
-    #         perplexity=500,
-    #         initialization="pca",
-    #         metric="cosine",
-    #         random_state=3,
-    #         exaggeration=12,
-    #         n_jobs=-1,
-    #     )
-    tsne = openTSNE.TSNE(n_jobs=-1)
+    umap = UMAP(     
+        n_components=2,   
+        n_neighbors=40,
+        min_dist=0.1,
+        metric="cosine",
+        angular_rp_forest=True)
 
     for bs in range(0, args['samples'], args['batch_size']):
         print("starting batch", bs//args['batch_size'])
@@ -93,17 +76,17 @@ def compute_heatmaps(diffusion, args):
         full_data.append(data)
 
     full_data = np.concatenate(full_data, axis=1)
-    full_data = reduce_data(full_data.reshape(full_data.shape[0], full_data.shape[1], -1), tsne)
-    print(full_data.shape)
+    full_data = reduce_data(full_data.reshape(full_data.shape[0], full_data.shape[1], -1), umap)
+
     gen_heatmap(full_data, args['save_loc'])
 
 if __name__ == '__main__':
     args = {
-        'sample_timestep': 25,
+        'sample_timestep': 35,
         'scale': 3.8,
 
-        'samples': 6000,
-        'batch_size': 600,
+        'samples': 10000,
+        'batch_size': 500,
 
         'load_model': 'best_model/ema_model_1200.pt',
         'save_loc': 'samples/heatmaps'

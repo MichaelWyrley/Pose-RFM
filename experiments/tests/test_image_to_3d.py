@@ -102,7 +102,7 @@ def calculate_metrics(ground_truth_dir, generated_dir, args, ground_truth = Fals
             
 
         for i in range(gtf_poses.Jtr.shape[0]):
-            result['pa_mpjpe'].append( get_mpjpe(gtf_poses.Jtr[i].cpu().detach().numpy()[:22], genf_poses.Jtr[i].cpu().detach().numpy()[:22]))
+            result['pa_mpjpe'].append( get_mpjpe(gtf_poses.Jtr[i].cpu().detach().numpy(), genf_poses.Jtr[i].cpu().detach().numpy()))
             result['pa_mpvpe'].append( get_pve(gtf_poses.v[i].cpu().detach().numpy(), genf_poses.v[i].cpu().detach().numpy()))
             result['pck'].append(      get_pck(gtf_poses.Jtr[i].cpu().detach().numpy()[:22], genf_poses.Jtr[i].cpu().detach().numpy()[:22]))
 
@@ -157,7 +157,7 @@ if __name__ == '__main__':
 
         'ground_truth_directory': 'dataset/3DPW/npz_poses/ground_truth/',
         'generated_directory': 'dataset/3DPW/smpl_poses/',
-        'denoised_directory': 'dataset/3DPW/npz_poses/denoised_smpl/',
+        'denoised_directory': 'dataset/3DPW/npz_poses/nrdf_smpl/',
 
         'batch_size': 500,
         'initial_timestep': 10,
@@ -170,7 +170,7 @@ if __name__ == '__main__':
     }
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    generate_denoised_values(args, device)
+    # generate_denoised_values(args, device)
     result_gt = calculate_metrics(args['ground_truth_directory'], args['generated_directory'], args, ground_truth = True, device=device)
     result_denoised = calculate_metrics(args['ground_truth_directory'], args['denoised_directory'], args, ground_truth=False,  device=device)
 

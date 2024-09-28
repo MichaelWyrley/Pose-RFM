@@ -1,4 +1,5 @@
 /dataset/*
+/dataset.zip
 /samples/*
 /experiments/samples/*
 /experiments/current_tests/*

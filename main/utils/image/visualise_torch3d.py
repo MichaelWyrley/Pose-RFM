@@ -66,13 +66,13 @@ def visualise(args):
         imw, imh=800, 800
         renerer = Renderer(imw, imh, device)
         faces = faces.unsqueeze(0).expand(body_pose_params.v.shape[0], -1, -1)
+        verts = body_pose_params.v
         
-        verts = body_pose_params.v.cpu()
-        renderer = renerer
         images = renerer(verts.to(device), faces.to(device)).cpu()
+
         if args['output_obj']:
             for i in range(time_length):
-                    render_obj(renerer, verts, faces, args['image_loc'] + "{:03d}.obj".format(i))
+                render_obj(renerer, verts[i], faces[i], args['image_loc'] + "{:03d}.obj".format(i))
         
         images_to_grid(images.permute(0, 3,1,2), args['image_loc'] + args['name'] + "grid.png", nrow=4)
 
@@ -81,14 +81,15 @@ def visualise(args):
         renerer = Renderer(imw, imh, 'cpu')
 
         verts = body_pose_params.v.cpu()
-        images = renerer(verts, faces.unsqueeze(0))
+        faces = faces.unsqueeze(0).expand(body_pose_params.v.shape[0], -1, -1)
+        images = renerer(verts, faces)
         
         for i in range(time_length):
 
             if args['output_obj']:
-                render_obj(renerer, verts, faces, args['image_loc'] + "{:03d}.obj".format(i))
+                render_obj(renerer, verts[i], faces[i], args['image_loc'] + "{:03d}.obj".format(i))
 
-            plt.imsave(args['image_loc'] + "{:03d}.png".format(i), img.numpy())
+            plt.imsave(args['image_loc'] + "{:03d}.png".format(i), images[i].numpy())
             print(f"saved image {i}")
 
 

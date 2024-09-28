@@ -10,5 +10,4 @@ pillow==10.2.0
 scipy==1.13.1
 trimesh==4.4.0
 pyrender==0.1.45
-openTSNE
 seaborn
