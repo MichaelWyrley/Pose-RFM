@@ -27,7 +27,7 @@ def render_obj(render, verts, faces, save_loc):
 
 def render_img(render, verts, faces):
     img = render(verts.unsqueeze(0), faces.unsqueeze(0))
-    return img
+    return img.reshape(self.image_size[0], self.image_size[1], -1)
 
 def visualise(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -58,33 +58,38 @@ def visualise(args):
     if args['print']: print('Body parameter vector shapes: \n{}'.format(' \n'.join(['{}: {}'.format(k,v.shape) for k,v in body_parms.items()])))
     if args['print']: print('time_length = {}'.format(time_length))
 
-    imw, imh=800, 800
-    renerer = Renderer(imw, imh)
 
     print('Saving images')
 
     if args['save_grid']:
-        images = []
+
+        imw, imh=800, 800
+        renerer = Renderer(imw, imh, device)
+        faces = faces.unsqueeze(0).expand(body_pose_params.v.shape[0], -1, -1)
+        verts = body_pose_params.v
         
-        for i in range(time_length):
-            verts = body_pose_params.v[i].cpu()
-            img = render_img(renerer, verts, faces)
-            if args['output_obj']:
-                render_obj(renerer, verts, faces, args['image_loc'] + "{:03d}.obj".format(i))
-            images.append(img.permute(2,0,1))
+        images = renerer(verts.to(device), faces.to(device)).cpu()
+
+        if args['output_obj']:
+            for i in range(time_length):
+                render_obj(renerer, verts[i], faces[i], args['image_loc'] + "{:03d}.obj".format(i))
         
-        images_to_grid(images, args['image_loc'] + args['name'] + "grid.png", nrow=4)
+        images_to_grid(images.permute(0, 3,1,2), args['image_loc'] + args['name'] + "grid.png", nrow=4)
 
     else:
+        imw, imh=800, 800
+        renerer = Renderer(imw, imh, 'cpu')
 
+        verts = body_pose_params.v.cpu()
+        faces = faces.unsqueeze(0).expand(body_pose_params.v.shape[0], -1, -1)
+        images = renerer(verts, faces)
+        
         for i in range(time_length):
-            verts = body_pose_params.v[i].cpu()
-            img = render_img(renerer, verts, faces)
+
             if args['output_obj']:
-                render_obj(renerer, verts, faces, args['image_loc'] + "{:03d}.obj".format(i))
+                render_obj(renerer, verts[i], faces[i], args['image_loc'] + "{:03d}.obj".format(i))
 
-
-            plt.imsave(args['image_loc'] + "{:03d}.png".format(i), img.numpy())
+            plt.imsave(args['image_loc'] + "{:03d}.png".format(i), images[i].numpy())
             print(f"saved image {i}")
 
 
@@ -92,12 +97,12 @@ def visualise(args):
 
 if __name__ == '__main__':
     args = {
-        'frame': 'samples/gen_video/data_0.npz',
+        'frame': '../individual-project/experiments/samples/NRDF/res0.npz',
         'model': './dataset/models/neutral/model.npz',
-        'image_loc': './samples/images/',
+        'image_loc': './samples/images/nrdf',
         'name': '',
         'print': True,
-        'time_length': 2,
+        'time_length': 25,
 
         'output_obj': True,
 

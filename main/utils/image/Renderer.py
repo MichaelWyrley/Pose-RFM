@@ -14,9 +14,9 @@ import numpy as np
 import cv2
 
 class Renderer(nn.Module):
-    def __init__(self, img_width, img_height):
+    def __init__(self, img_width, img_height, device):
         super(Renderer, self).__init__()
-
+        self.device = device
         self.image_size = (img_width, img_height)
         raster_settings = RasterizationSettings(
             image_size=self.image_size, 
@@ -41,21 +41,21 @@ class Renderer(nn.Module):
                 lights=lights,
                 # blend_params=blend_params
             )
-        )
+        ).to(device)
 
     def forward(self, verts, faces):
         verts_rgb = torch.ones_like(verts)  # (1, V, 3)
-        textures = TexturesVertex(verts_features=verts_rgb.to(verts.device))
+        textures = TexturesVertex(verts_features=verts_rgb).to(self.device)
 
         mesh = Meshes(verts=verts, faces=faces, textures = textures)
         img = self.renderer(mesh)[:, :,:,:3]
         # img = img.astype(np.uint8)
         # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        return img.reshape(self.image_size[0], self.image_size[1], -1)
+        return img
 
     def save_obj(self, verts, faces, save_loc):
         verts_rgb = torch.ones_like(verts)  # (1, V, 3)
-        textures = TexturesVertex(verts_features=verts_rgb.to(verts.device))
+        textures = TexturesVertex(verts_features=verts_rgb).to(self.device)
 
         mesh = Meshes(verts=verts, faces=faces, textures = textures)
         IO().save_mesh(mesh, save_loc, include_textures = True)

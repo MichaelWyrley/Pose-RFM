@@ -1,13 +1,14 @@
 /dataset/*
+/dataset.zip
 /samples/*
 /experiments/samples/*
 /experiments/current_tests/*
-
 
 /best_model/*
 
 main/animal/samples/
 main/animal/img/
+main/utils/image/gen_face_image.py
 
 __pycache__/
 experiments/__pycache__

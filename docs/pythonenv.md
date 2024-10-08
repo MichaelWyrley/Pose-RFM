@@ -16,13 +16,20 @@ Then activate the environment with
 
 the latest version of pytorch with cuda 11.8 can be installed using this command
 
-`pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118`
+`pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118`
 
 ## Install requirements.txt
 
 All requirements for this project can be installed using
 
 `pip install -r requirements.txt`
+
+## Install RAPIDS for dimentionality reduction
+
+If you intend to generate heatmaps based on the pose data the `main/utils/get_umap.py` script can be used.
+It uses a GPU accelerated version of UMAP from nvidias [RAPIDS library](https://rapids.ai/)
+
+`pip install --extra-index-url=https://pypi.nvidia.com cuml-cu11==24.8.*`
 
 # Installing Body Model
 
