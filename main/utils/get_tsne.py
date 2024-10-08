@@ -22,7 +22,7 @@ def reduce_data(data, tsne):
         # reduced_data = tsne.fit_transform(d)
         reduced_data = tsne.fit(d)
         reduced_data.affinities.set_perplexities([50])
-        reduced_data = reduced_data.optimize(250)
+        reduced_data = reduced_data.optimize(250, exageration=1)
 
         full_data.append(reduced_data)
 
@@ -43,17 +43,31 @@ def gen_heatmap(data, save_loc):
         plt.savefig(save_loc +"/{:03d}.png".format(i), bbox_inches='tight')
         plt.clf()
     
+def load_heatmap(save_loc): 
+    data = np.load(save_loc + "/data.npz")['arr_0']
+
+    plt.figure(figsize=(20, 20), dpi=80)
+    
+    for i in range(data.shape[0]):
+        print("saving denoise step {:03d}".format(i))
+
+        sns.set_style("white")
+        sns.kdeplot(x=data[i,:,0], y=data[i,:,1], fill=False, thresh=0, levels=20)
+        plt.axis('off')
+        plt.savefig(save_loc +"/{:03d}.png".format(i), bbox_inches='tight')
+        plt.clf()
 
 def compute_heatmaps(diffusion, args):
     full_data = []
 
     # tsne = TSNE(n_components=2, perplexity = 20, early_exaggeration=12, n_iter_without_progress= 500, max_iter= 10000, method='exact')
     tsne = openTSNE.TSNE(
-            perplexity=500,
+            perplexity=250,
+            # exageration=4,
             initialization="pca",
             metric="cosine",
-            n_jobs=8,
-            random_state=3,
+            n_jobs=-1,
+            random_state=42,
         )
 
     for bs in range(0, args['samples'], args['batch_size']):
@@ -88,5 +102,6 @@ if __name__ == '__main__':
 
     diffusion = FlowMatchingMatrix(model, device=device)
 
+    # load_heatmap(args['save_loc'])
     compute_heatmaps(diffusion, args)
 
