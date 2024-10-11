@@ -64,10 +64,11 @@ def compute_heatmaps(diffusion, args):
 
     umap = UMAP(     
         n_components=2,   
-        n_neighbors=40,
+        n_neighbors=80,
         min_dist=0.1,
         metric="cosine",
-        angular_rp_forest=True)
+        angular_rp_forest=True,
+        random_state=42)
 
     for bs in range(0, args['samples'], args['batch_size']):
         print("starting batch", bs//args['batch_size'])

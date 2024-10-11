@@ -1,7 +1,7 @@
 
 import sys
 # add the current working directory so this can be run from the github repo root !!
-sys.path.append("")
+sys.path.append('')
 import torch
 import numpy as np
 import glob
@@ -10,8 +10,7 @@ from os import path as osp
 from human_body_prior.tools.omni_tools import copy2cpu as c2c
 from human_body_prior.body_model.body_model import BodyModel
 
-from main.flowMatchingModels.flowMatchingMatrix import FlowMatchingMatrix
-from main.vectorFieldModels.Transformer_adaLN_zero import DiT_adaLN_zero
+from experiments.utils.refine_pose import refing_poses
 
 
 def pose_to_vert(pose_body, betas, args, device='cuda'):
@@ -24,6 +23,7 @@ def pose_to_vert(pose_body, betas, args, device='cuda'):
     pose_body = torch.Tensor(pose_body.reshape(time_length, -1)).to(device)
     body_pose_beta = bm(pose_body=pose_body, betas=betas)
     return body_pose_beta
+
 
 # modified from https://github.com/caizhongang/SMPLer-X/blob/main/common/utils/transforms.py#L33
 def rigid_transform_3D(A, B):
@@ -75,8 +75,6 @@ def get_pck(gtf_poses, genf_poses):
 
     return percent
 
-
-
 def calculate_metrics(ground_truth_dir, generated_dir, args, ground_truth = False, device='cuda'):
     
     ground_truth_files = sorted(glob.glob(ground_truth_dir + '*.npz'))
@@ -102,7 +100,7 @@ def calculate_metrics(ground_truth_dir, generated_dir, args, ground_truth = Fals
             
 
         for i in range(gtf_poses.Jtr.shape[0]):
-            result['pa_mpjpe'].append( get_mpjpe(gtf_poses.Jtr[i].cpu().detach().numpy(), genf_poses.Jtr[i].cpu().detach().numpy()))
+            result['pa_mpjpe'].append( get_mpjpe(gtf_poses.Jtr[i].cpu().detach().numpy()[:22], genf_poses.Jtr[i].cpu().detach().numpy()[:22]))
             result['pa_mpvpe'].append( get_pve(gtf_poses.v[i].cpu().detach().numpy(), genf_poses.v[i].cpu().detach().numpy()))
             result['pck'].append(      get_pck(gtf_poses.Jtr[i].cpu().detach().numpy()[:22], genf_poses.Jtr[i].cpu().detach().numpy()[:22]))
 
@@ -121,34 +119,6 @@ def calculate_metrics(ground_truth_dir, generated_dir, args, ground_truth = Fals
 
     return results
 
-def generate_denoised_values(args, device='cuda'):
-    model = DiT_adaLN_zero(in_dim=6, depth=12, emb_dimention=768, num_heads=12,).to(device)
-    model.load_state_dict(torch.load(args['load_model']))
-    model.eval()
-
-    diffusion = FlowMatchingMatrix(model, device=device)
-
-    noisy_seq = sorted(glob.glob(args['generated_directory'] + '/*.npz'))
-
-    with torch.no_grad():
-        for i, seq in enumerate(noisy_seq):
-            name = seq.split('/')[-1].split('.')[0]
-            print("denoising " + name)
-            cdata = np.load(seq)
-            noisy_poses = cdata['body_pose'][:, :63]
-            noisy_poses = torch.Tensor(noisy_poses.reshape(-1, 21, 3)).to(device)
-
-            batched_noisy_poses = torch.split(noisy_poses, args['batch_size'])
-            clean_poses = []
-            for pose in batched_noisy_poses:
-                clean_pose = diffusion.denoise_pose(pose, args['initial_timestep'], args['timesteps'], args['scale'])
-                distance = torch.sqrt(torch.sum((clean_pose - pose) ** 2, 2))[:, :, None]
-
-                clean_poses.append((pose + args['regularising_factor']*distance).cpu().detach().numpy())
-
-            clean_poses = np.concatenate(clean_poses, axis=0).reshape(noisy_poses.shape[0], -1)
-            np.savez(args['denoised_directory'] + name, body_pose=clean_poses, betas=cdata['betas'])
-
 
 if __name__ == '__main__':
     args = {
@@ -160,17 +130,27 @@ if __name__ == '__main__':
         'denoised_directory': 'dataset/3DPW/npz_poses/nrdf_smpl/',
 
         'batch_size': 500,
-        'initial_timestep': 10,
-        'timesteps': 15,
+        'initial_timestep': 23,
+        'timesteps': 25,
         'scale': 1,
-        'regularising_factor': 0.03,
         
+        'data_loss_regulariser': 0.02,
+        'pose_loss_regulariser': 0.5,
+        'betas_loss_regulariser': 0.005,
+        'general_loss_regulariser': 0,
+        'refine_max_steps': 25,
+        'amount_of_greater_values': 3,
+        # 'LBFGS_max_iter': 30,
+        'learn_rate': 0.01,
+        'sigma': 10,
+
+        'average_betas_information': 'experiments/utils/betas.npz',
         
         'model': 'dataset/models/neutral/model.npz',
     }
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    # generate_denoised_values(args, device)
+    refing_poses(args, device)
     result_gt = calculate_metrics(args['ground_truth_directory'], args['generated_directory'], args, ground_truth = True, device=device)
     result_denoised = calculate_metrics(args['ground_truth_directory'], args['denoised_directory'], args, ground_truth=False,  device=device)
 
