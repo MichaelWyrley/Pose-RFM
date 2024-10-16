@@ -64,7 +64,7 @@ def visualise(args):
     if args['save_grid']:
 
         imw, imh=800, 800
-        renerer = Renderer(imw, imh, device)
+        renerer = Renderer(img_width=imw, img_height=imh, device=device)
         faces = faces.unsqueeze(0).expand(body_pose_params.v.shape[0], -1, -1)
         verts = body_pose_params.v
         
@@ -78,7 +78,7 @@ def visualise(args):
 
     else:
         imw, imh=800, 800
-        renerer = Renderer(imw, imh, 'cpu')
+        renerer = Renderer(img_width=imw, img_height=imh, device= 'cpu')
 
         verts = body_pose_params.v.cpu()
         faces = faces.unsqueeze(0).expand(body_pose_params.v.shape[0], -1, -1)

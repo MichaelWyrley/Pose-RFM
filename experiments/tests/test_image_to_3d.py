@@ -10,18 +10,25 @@ from os import path as osp
 from human_body_prior.tools.omni_tools import copy2cpu as c2c
 from human_body_prior.body_model.body_model import BodyModel
 
-from experiments.utils.refine_pose import refing_poses
+# from experiments.utils.refine_pose import refing_poses
 
 
-def pose_to_vert(pose_body, betas, args, device='cuda'):
-    num_betas = len(betas) # number of body parameters
+def pose_to_vert(pose_body, betas, root_orient, trans, args, num_betas = 10, device='cuda'):
     time_length = len(pose_body)
 
     bm = BodyModel(args['model'], num_betas=num_betas, model_type='smplh').to(device)
+    if len(betas.shape) == 1: 
+        betas = torch.Tensor(np.repeat(betas[:num_betas][np.newaxis], repeats=time_length, axis=0)).to(device)
+    else:
+        betas = torch.Tensor(betas).to(device)
 
-    betas = torch.Tensor(np.repeat(betas[:num_betas][np.newaxis], repeats=time_length, axis=0)).to(device)
+
     pose_body = torch.Tensor(pose_body.reshape(time_length, -1)).to(device)
-    body_pose_beta = bm(pose_body=pose_body, betas=betas)
+    root_orient = torch.Tensor(root_orient).to(device)
+    # trans = torch.Tensor(np.repeat(trans[:num_betas][np.newaxis], repeats=time_length, axis=0)).to(device)
+    trans = torch.Tensor(trans).to(device)
+
+    body_pose_beta = bm(pose_body=pose_body, betas=betas, root_orient = root_orient, trans = trans)
     return body_pose_beta
 
 
@@ -56,7 +63,7 @@ def get_mpjpe(gtf_poses, genf_poses):
     joint_out_body_align = rigid_align(genf_poses, gtf_poses)
     dist =  np.sqrt(np.sum((joint_out_body_align - gtf_poses) ** 2, 1)) * 1000
 
-    return dist
+    return dist.mean()
 
 # modified from https://github.com/caizhongang/SMPLer-X/blob/main/data/humandata.py#593
 def get_pve(gtf_vert, genf_verts):
@@ -75,34 +82,42 @@ def get_pck(gtf_poses, genf_poses):
 
     return percent
 
-def calculate_metrics(ground_truth_dir, generated_dir, args, ground_truth = False, device='cuda'):
+def calculate_metrics(ground_truth_dir, generated_dir, args, device='cuda'):
     
-    ground_truth_files = sorted(glob.glob(ground_truth_dir + '*.npz'))
-    generated_files = sorted(glob.glob(generated_dir + '*.npz'))
+    ground_truth_files = sorted(glob.glob(ground_truth_dir + '*.npz'))[1:]
+    generated_files = sorted(glob.glob(generated_dir + '*.npz'))[1:]
 
     results = {'pa_mpjpe': [], 'pa_mpvpe': [], 'pck': [] }
 
     for (gtf, genf) in zip(ground_truth_files, generated_files):
-        print("Calculateing for:", gtf.split('/')[-1].split('.')[0], genf.split('/')[-1].split('.')[0])
+        # print("Calculateing for:", gtf.split('/')[-1].split('.')[0], genf.split('/')[-1].split('.')[0])
         result = {'pa_mpjpe': [], 'pa_mpvpe': [], 'pck': [] }
 
         ground_truth_sequence = np.load(gtf, allow_pickle=True)
         generated_sequence = np.load(genf, allow_pickle=True)
 
         gtf_poses = np.array(ground_truth_sequence['poses'][0])[:, 3:66]  # 3:72 then :63
-        gtf_betas = np.array(ground_truth_sequence['betas'][0])[:10]
+        gtf_root_orient = np.array(ground_truth_sequence['poses'][0])[:, :3]
+        gtf_trans = np.array(ground_truth_sequence['trans'][0, :, :])
+        gtf_betas = np.array(ground_truth_sequence['betas'][0])
 
         genf_poses = np.array(generated_sequence['body_pose'])[:, :63]
-        genf_betas = np.array(generated_sequence['betas'])[:10]
+        genf_root_orient = np.array(generated_sequence['global_orient'])[:, :3]
+        if not len(generated_sequence['trans'].shape) == 2:
+            genf_trans = np.array(generated_sequence['trans'][:, 0, :])
+        else:
+            genf_trans = np.array(generated_sequence['trans'])
+        genf_betas = np.array(generated_sequence['betas'])
 
-        gtf_poses = pose_to_vert(gtf_poses, gtf_betas, args)
-        genf_poses = pose_to_vert(genf_poses, genf_betas, args)
+        gtf_poses = pose_to_vert(gtf_poses, gtf_betas, gtf_root_orient, gtf_trans, args)
+        genf_poses = pose_to_vert(genf_poses, genf_betas, genf_root_orient, genf_trans, args)
             
 
-        for i in range(gtf_poses.Jtr.shape[0]):
-            result['pa_mpjpe'].append( get_mpjpe(gtf_poses.Jtr[i].cpu().detach().numpy()[:22], genf_poses.Jtr[i].cpu().detach().numpy()[:22]))
+        for i in range(genf_poses.Jtr.shape[0]):
+            result['pa_mpjpe'].append( get_mpjpe(gtf_poses.Jtr[i].cpu().detach().numpy(), genf_poses.Jtr[i].cpu().detach().numpy()))
             result['pa_mpvpe'].append( get_pve(gtf_poses.v[i].cpu().detach().numpy(), genf_poses.v[i].cpu().detach().numpy()))
-            result['pck'].append(      get_pck(gtf_poses.Jtr[i].cpu().detach().numpy()[:22], genf_poses.Jtr[i].cpu().detach().numpy()[:22]))
+            result['pck'].append(      get_pck(gtf_poses.Jtr[i].cpu().detach().numpy(), genf_poses.Jtr[i].cpu().detach().numpy()))
+
 
         results['pa_mpjpe'].append(np.array( result['pa_mpjpe']).mean())
         results['pa_mpvpe'].append(np.array( result['pa_mpvpe']).mean())
@@ -126,32 +141,19 @@ if __name__ == '__main__':
         'load_model': 'best_model/ema_model_1200.pt',
 
         'ground_truth_directory': 'dataset/3DPW/npz_poses/ground_truth/',
-        'generated_directory': 'dataset/3DPW/smpl_poses/',
-        'denoised_directory': 'dataset/3DPW/npz_poses/nrdf_smpl/',
-
-        'batch_size': 500,
-        'initial_timestep': 23,
-        'timesteps': 25,
-        'scale': 1,
-        
-        'data_loss_regulariser': 0.02,
-        'pose_loss_regulariser': 0.5,
-        'betas_loss_regulariser': 0.005,
-        'general_loss_regulariser': 0,
-        'refine_max_steps': 25,
-        'amount_of_greater_values': 3,
-        # 'LBFGS_max_iter': 30,
-        'learn_rate': 0.01,
-        'sigma': 10,
-
-        'average_betas_information': 'experiments/utils/betas.npz',
+        'generated_directory': 'dataset/3DPW/npz_poses/dpose_results_no_prior/',
+        'denoised_directory': 'dataset/3DPW/npz_poses/dpose_results_no_prior/',
+        'all_dirs': ['dataset/3DPW/dpose_poses/dpose_results_no_prior/', 'dataset/3DPW/dpose_poses/dpose_results_vpose/', 'dataset/3DPW/dpose_poses/dpose_results_pose_ndf/', 'dataset/3DPW/dpose_poses/dpose_results_nrdf/','dataset/3DPW/dpose_poses/dpose_results_pose_rfm/'],
         
         'model': 'dataset/models/neutral/model.npz',
     }
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    refing_poses(args, device)
-    result_gt = calculate_metrics(args['ground_truth_directory'], args['generated_directory'], args, ground_truth = True, device=device)
-    result_denoised = calculate_metrics(args['ground_truth_directory'], args['denoised_directory'], args, ground_truth=False,  device=device)
+    # refing_poses(args, device)
+    for i in args['all_dirs']:
+        print("calculating for:", i.split('/')[-2])
+        results = calculate_metrics(args['ground_truth_directory'], i, args, device=device)
+    # result_gt = calculate_metrics(args['ground_truth_directory'], args['generated_directory'], args, device=device)
+    # result_denoised = calculate_metrics(args['ground_truth_directory'], args['denoised_directory'], args, device=device)
 
     

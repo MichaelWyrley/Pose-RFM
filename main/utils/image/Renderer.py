@@ -1,7 +1,7 @@
 # modified from https://github.com/benjiebob/SMALViewer/blob/master/p3d_renderer.py
 from pytorch3d.structures import Meshes
 from pytorch3d.renderer import (
-    OpenGLPerspectiveCameras, look_at_view_transform, look_at_rotation, 
+    PerspectiveCameras, look_at_view_transform, look_at_rotation, 
     RasterizationSettings, MeshRenderer, MeshRasterizer, BlendParams,
     PointLights, SoftPhongShader, SoftSilhouetteShader, TexturesVertex
 )
@@ -14,10 +14,15 @@ import numpy as np
 import cv2
 
 class Renderer(nn.Module):
-    def __init__(self, img_width, img_height, device):
+    def __init__(self, img_width=800, img_height=800, focal_length=500, cam_intrinsics=cam_intrinsics, device='cuda'):
         super(Renderer, self).__init__()
         self.device = device
-        self.image_size = (img_width, img_height)
+        if cam_intrinsics is None:
+            self.image_size = (img_width, img_height)
+        else:
+            self.image_size = (cam_intrinsics[0, 2]*2, cam_intrinsics[1, 2]*2)
+            focal_length = torch.cat([cam_intrinsics[0, 0], cam_intrinsics[1, 1]]).unsqueeze(0)
+
         raster_settings = RasterizationSettings(
             image_size=self.image_size, 
             blur_radius=0.0, 
@@ -26,7 +31,7 @@ class Renderer(nn.Module):
         )
 
         R, T = look_at_view_transform(2.7, 0, 0) 
-        cameras = OpenGLPerspectiveCameras(device=R.device, R=R, T=T)
+        cameras = PerspectiveCameras(focal_length = focal_length, device=R.device, R=R, T=T)
         lights = PointLights(device=R.device, location=[[2.0, 2.0, 0.0]])
         # blend_params = BlendParams(device=R.device, background_color = (0.0,0.0,0.0))
 
