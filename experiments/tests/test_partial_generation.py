@@ -79,9 +79,6 @@ def dnn(gen_pose, index, all_poses_aa, all_poses_quat, k_faiss=1000, k_dist=1):
     
     return dist_gt.mean()
 
-# Actually randomly chose the mask, and generate a series of masked poses based on a single pose with a single mask !!!! 
-# Do this for multiple randomly chosen masks 
-# And test that !!
 def gen_partial(diffusion, args):
     device = diffusion.device
     clean_seqs = sorted(glob.glob(args['clean'] + '/*/*.npz'))

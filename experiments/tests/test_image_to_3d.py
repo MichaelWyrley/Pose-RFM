@@ -78,7 +78,7 @@ def get_pck(gtf_poses, genf_poses):
     joint_out_body_align = rigid_align(genf_poses, gtf_poses)
     distance = np.sqrt(np.sum((joint_out_body_align - gtf_poses) ** 2, 1)) * 1000
     
-    percent = (distance < 50).mean()
+    percent = (distance < 100).mean()
 
     return percent
 
@@ -141,9 +141,9 @@ if __name__ == '__main__':
         'load_model': 'best_model/ema_model_1200.pt',
 
         'ground_truth_directory': 'dataset/3DPW/npz_poses/ground_truth/',
-        'generated_directory': 'dataset/3DPW/npz_poses/dpose_results_no_prior/',
-        'denoised_directory': 'dataset/3DPW/npz_poses/dpose_results_no_prior/',
-        'all_dirs': ['dataset/3DPW/dpose_poses/dpose_results_no_prior/', 'dataset/3DPW/dpose_poses/dpose_results_vpose/', 'dataset/3DPW/dpose_poses/dpose_results_pose_ndf/', 'dataset/3DPW/dpose_poses/dpose_results_nrdf/','dataset/3DPW/dpose_poses/dpose_results_pose_rfm/'],
+        'generated_directory': '../DPoser/dpose_results_no_prior/',
+        # 'denoised_directory': 'dataset/3DPW/npz_poses/dpose_results_no_prior/',
+        'all_dirs': ['dataset/3DPW/dpose_poses_100/dpose_results_no_prior/', 'dataset/3DPW/dpose_poses_100/dpose_results_vpose/', 'dataset/3DPW/dpose_poses_100/dpose_results_pose_ndf/', 'dataset/3DPW/dpose_poses_100/dpose_results_nrdf/','dataset/3DPW/dpose_poses_100/dpose_results_pose_rfm/'],
         
         'model': 'dataset/models/neutral/model.npz',
     }
@@ -153,6 +153,7 @@ if __name__ == '__main__':
     for i in args['all_dirs']:
         print("calculating for:", i.split('/')[-2])
         results = calculate_metrics(args['ground_truth_directory'], i, args, device=device)
+    
     # result_gt = calculate_metrics(args['ground_truth_directory'], args['generated_directory'], args, device=device)
     # result_denoised = calculate_metrics(args['ground_truth_directory'], args['denoised_directory'], args, device=device)
 
