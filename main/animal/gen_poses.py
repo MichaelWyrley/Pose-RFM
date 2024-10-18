@@ -4,7 +4,13 @@ import torch
 import os
 import numpy as np
 
-from main.flowMatchingModels.flowMatchingMatrix import FlowMatchingMatrix
+# The current animal Trained model used the older version of Flow Matching Matrix
+from main.flowMatchingModels.flowMatchingMatrix_OLD import FlowMatchingMatrix
+
+# Repalce with this if using your own trained version
+# from main.flowMatchingModels.flowMatchingMatrix import FlowMatchingMatrix
+
+
 from main.vectorFieldModels.Transformer_adaLN_zero_conditioned import DiT_adaLN_zero
 
 from main.animal.vis_animal import visualise

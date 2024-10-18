@@ -195,12 +195,12 @@ class FlowMatchingMatrix(FlowMatching):
         :param x_1: Input data used for training
         :return: The computed loss as a result of training
         """
-        x_1 = transforms.euler_angles_to_matrix(x_1, "XYZ")
+        x_1 = transforms.axis_angle_to_matrix(x_1)
 
         if torch.rand(1) > self.gen_x0:
             x_0 = self.gen_random_x(x_1)
         else:
-            x_0 = transforms.euler_angles_to_matrix(x_0, "XYZ")
+            x_0 = transforms.axis_angle_to_matrix(x_0)
 
         t = self.sample_timestep(x_0.shape[0]).requires_grad_(True)
 
@@ -288,7 +288,7 @@ class FlowMatchingMatrix(FlowMatching):
 
         self.model.eval()
         with torch.no_grad():
-            partial_x_1 = transforms.euler_angles_to_matrix(partial_x_1, "XYZ").to(self.device)
+            partial_x_1 = transforms.axis_angle_to_matrix(partial_x_1).to(self.device)
             n = partial_x_1.shape[0]
 
             z_0 = self.gen_random_x(torch.zeros(n, self.number_joints, 3,3)).to(self.device)
@@ -327,7 +327,7 @@ class FlowMatchingMatrix(FlowMatching):
 
         self.model.eval()
         with torch.no_grad():
-            z = transforms.euler_angles_to_matrix(noisy_pose, "XYZ").to(self.device)
+            z = transforms.axis_angle_to_matrix(noisy_pose).to(self.device)
             n = z.shape[0]
             
             steps = torch.linspace(0.0, 1.0, timesteps, device=self.device)
