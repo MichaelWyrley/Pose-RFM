@@ -5,8 +5,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from experiments.tests.test_generation import average_pairwise_distance, frechet_distance
-from sampling.sample_pose import sample_model
+from experiments.sampling.sample_pose import sample_model
 from experiments.tests.test_pose_denoising import project_poses
+from experiments.test_suite import confidence_interval
 
 from main.flowMatchingModels.flowMatchingMatrix import FlowMatchingMatrix
 from main.vectorFieldModels.Transformer_adaLN_zero import DiT_adaLN_zero
@@ -68,16 +69,16 @@ def test_denoise_different_models():
 def test_different_models():
     print("----------test_different_models---------")
     args = {
-        'save_location': 'experiments/samples/generated_samples/', 
+        'save_location': 'experiments/samples/generated_ablation/', 
         'samples': 500,
         'no_samples': 20,
         # Change to 25 to match timestep thing from flow matching
-        'sample_timestep': 10,
+        'sample_timestep': 35,
         'scale': 3.5,
         
 
         'dataset_directory': './dataset/amass/SAMPLED_POSES/',
-        'generated_directory': 'experiments/samples/generated_samples/',
+        'generated_directory': 'experiments/samples/generated_ablation/',
         'model': './dataset/models/neutral/model.npz',
         'dataset_name': 'pose_body',
         'dataset_size': 500,
@@ -85,7 +86,8 @@ def test_different_models():
 
         # 'load_model': ['working_models/time_0/ema_model_400.pt','working_models/noised_pose_90/ema_model_400.pt','working_models/time_50/ema_model_400.pt','working_models/time_75/ema_model_400.pt','working_models/time_100/ema_model_400.pt'],
         # 'load_model': ['models/model_900.pt', 'models/model_1000.pt', 'models/model_1100.pt', 'models/model_1200.pt'],
-        'load_model': ['working_models/time_sample_10/model_400.pt'],
+        'load_model': ['samples/training_models/model_0.pt', 'samples/training_models/model_100.pt', 'samples/training_models/model_200.pt', 'samples/training_models/model_300.pt', 'samples/training_models/model_400.pt', 'samples/training_models/model_500.pt', 'samples/training_models/model_600.pt', 'samples/training_models/model_700.pt', 'samples/training_models/model_800.pt', 'samples/training_models/model_900.pt', 'samples/training_models/model_1000.pt', 'samples/training_models/model_1100.pt', 'samples/training_models/model_1200.pt',
+        'samples/training_models/ema_model_0.pt', 'samples/training_models/ema_model_100.pt', 'samples/training_models/ema_model_200.pt', 'samples/training_models/ema_model_300.pt', 'samples/training_models/ema_model_400.pt', 'samples/training_models/ema_model_500.pt', 'samples/training_models/ema_model_600.pt', 'samples/training_models/ema_model_700.pt', 'samples/training_models/ema_model_800.pt', 'samples/training_models/ema_model_900.pt', 'samples/training_models/ema_model_1000.pt', 'samples/training_models/ema_model_1100.pt', 'samples/training_models/ema_model_1200.pt'],
         
         'file': 'experiments/current_tests/test_different_models_time_samples.txt'
     }
@@ -107,8 +109,11 @@ def test_different_models():
             apd_mean, apd_std = average_pairwise_distance(args)
             fd_mean, fd_std = frechet_distance(args)
 
+            confidence_interval_apd = confidence_interval(apd_std, args['no_samples'])
+            confidence_interval_fd = confidence_interval(fd_std, args['no_samples'])
+
             f.write("MODEL = " + i + "\n")
-            f.write(str(apd_mean) + ',' + str(apd_std) + ',' + str(fd_mean) + ',' +str(fd_std) + "\n")
+            f.write(str(apd_mean) + ',' + str(apd_std) + ',' + str(confidence_interval_apd) + ',' + str(fd_mean) + ',' +str(fd_std) + ',' + str(confidence_interval_fd) + "\n")
 
 def test_dit_vs_ada_dit():
     print("----------test_different_models---------")
@@ -155,25 +160,25 @@ def test_dit_vs_ada_dit():
 def test_differnt_no_samples_and_scales():
     print("----------test_differnt_no_samples_and_scales---------")
     args = {
-        'save_location': 'experiments/samples/generated_samples/', 
+        'save_location': 'experiments/samples/generated_ablation/', 
         'samples': 500,
         'no_samples': 20,
+        'all_scale': [1, 2, 3, 4, 6, 8],
         # next do scale 3, for 1,5,10,20,25,30,35,40,50
-        'all_scale': [3.5],
-        'all_sample_timestep': [1],
+        'all_sample_timestep': [1,5,10,20,25,30,35,40,50],
 
         'scale': -1,
         'sample_timestep': -1,
 
         'dataset_directory': './dataset/amass/SAMPLED_POSES/',
-        'generated_directory': 'experiments/samples/generated_samples/',
+        'generated_directory': 'experiments/samples/generated_ablation/',
         'model': './dataset/models/neutral/model.npz',
         'dataset_name': 'pose_body',
         'dataset_size': 500,
         'dataset_data': 'experiments/utils/dataset_mean_cov.npz',
 
-        'load_model': ['working_models/time_sample_5/model_400.pt', 'working_models/time_sample_10/model_400.pt', 'working_models/time_sample_15/model_400.pt', 'working_models/time_sample_25/model_400.pt', 'working_models/noised_pose_90/model_400.pt'],
-        'file': 'experiments/test_differnt_no_samples_and_scales_time.txt'
+        'load_model': ['samples/training_models/ema_model_1200.pt'],
+        'file': 'experiments/current_tests/test_differnt_no_samples_and_scales_time.txt'
     }
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -201,14 +206,18 @@ def test_differnt_no_samples_and_scales():
                     apd_mean, apd_std = average_pairwise_distance(args)
                     fd_mean, fd_std = frechet_distance(args)
 
+                    confidence_interval_apd = confidence_interval(apd_std, args['no_samples'])
+                    confidence_interval_fd = confidence_interval(fd_std, args['no_samples'])
+                    
                     f.write("timestep=" + str(timesteps) + ",scale=" + str(scale) + "\n")
-                    f.write(str(apd_mean) + ',' + str(apd_std) + ',' + str(fd_mean) + ',' +str(fd_std) + "\n")
+                    f.write(str(apd_mean) + ',' + str(apd_std) + ',' + str(confidence_interval_apd) + ',' + str(fd_mean) + ',' +str(fd_std) + ',' + str(confidence_interval_fd) + "\n")
+
 
 
 
 if __name__ == '__main__':
-    # test_different_models()
-    test_differnt_no_samples_and_scales()
+    # test_differnt_no_samples_and_scales()
+    test_different_models()
     # test_dit_vs_ada_dit()
     # test_denoise_different_models()
 

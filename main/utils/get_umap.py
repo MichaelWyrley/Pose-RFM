@@ -17,16 +17,6 @@ def sample_dataset(diffusion, no_samples, timestep = 35, scale = 3.5):
     _, sample_list = diffusion.sample_full(no_samples, timestep, scale=scale)
     return sample_list.reshape(sample_list.shape[0], sample_list.shape[1], -1).cpu().detach().numpy()
 
-# def remove_similar_poses(data, threshold=0.1):
-#     print("removing similar poses")
-#     new_data = []
-
-#     for i in range(data.shape[0]):
-#         for j in range(i+1, data.shape[0]):
-#             distance = np.mean(np.linalg.norm(data[i] - data[j], dim = 1))
-            
-
-#     return np.array(new_data)
 
 def reduce_data(data, umap):
     full_data = []
@@ -125,12 +115,12 @@ def compute_heatmaps(diffusion, args):
 if __name__ == '__main__':
     args = {
         'sample_timestep': 25,
-        'scale': 3.8,
+        'scale': 4.2,
 
-        'samples': 5000,
+        'samples': 1000,
         'batch_size': 500,
 
-        'load_model': 'best_model/ema_model_1200.pt',
+        'load_model': 'samples/training_models/model_1200.pt',
         'save_loc': 'samples/heatmaps',
         'save_loc_pca': 'samples/heatmaps_int_pca',
         'save_bone_loc': 'samples/bone',

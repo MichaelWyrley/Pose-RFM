@@ -95,4 +95,4 @@ Here are all the other systems that helped:
 - [SMPL](https://smpl.is.tue.mpg.de/) The body used to visualise the data
 - [Body Visualiser](https://github.com/nghorbani/body_visualizer) The library to visualise the bodies
 - [DiT](https://github.com/facebookresearch/DiT) The transformer architecture used to learn the Vector Fields
-- [pytorch3d](https://github.com/facebookresearch/pytorch3d) A library used to convert between Euler angles and Rotation matrixes aswell as calculate the exp, log and geodesic distance for the rotation matrixes
+- [pytorch3d](https://github.com/facebookresearch/pytorch3d) A library used to convert between axis angles and Rotation matrixes aswell as calculate the exp, log and geodesic distance for the rotation matrixes

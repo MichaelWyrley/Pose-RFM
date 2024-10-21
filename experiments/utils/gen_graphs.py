@@ -12,8 +12,10 @@ def test_normal_vs_ema_models(ema_file, normal_file, name = 'test_different_mode
         'epoch': [],
         'APD_mu': [],
         'APD_std': [],
+        'APD_conv_int': [],
         'FID_mu': [],
         'FID_std': [],
+        'FID_conv_int': [],
     }
 
     data = {
@@ -30,7 +32,7 @@ def test_normal_vs_ema_models(ema_file, normal_file, name = 'test_different_mode
                 epoch = line.split('/')[-1].split('.')[0].split('_')[2]
                 data_ema['epoch'].append(epoch)
             else:
-                apd_mu, apd_std, fid_mu, fid_std = line.split(',')
+                apd_mu, apd_std, _, fid_mu, fid_std, _ = line.split(',')
                 data_ema['APD_mu'].append(float(apd_mu))
                 data_ema['APD_std'].append(float(apd_std))
                 data_ema['FID_mu'].append(float(fid_mu))
@@ -42,13 +44,13 @@ def test_normal_vs_ema_models(ema_file, normal_file, name = 'test_different_mode
                 epoch = line.split('/')[-1].split('.')[0].split('_')[1]
                 data['epoch'].append(epoch)
             else:
-                apd_mu, apd_std, fid_mu, fid_std = line.split(',')
+                apd_mu, apd_std, _, fid_mu, fid_std, _ = line.split(',')
                 data['APD_mu'].append(float(apd_mu))
                 data['APD_std'].append(float(apd_std))
                 data['FID_mu'].append(float(fid_mu))
                 data['FID_std'].append(float(fid_std))
     
-    fig, ax = plt.subplots(2, figsize=(20,10))
+    fig, ax = plt.subplots(2, figsize=(20,12))
     fig.tight_layout(pad=2.0)
     ax[0].set(xlabel='Epoch', ylabel='APD (m)')
     ax[1].set(xlabel='Epoch', ylabel='FD')
@@ -56,8 +58,8 @@ def test_normal_vs_ema_models(ema_file, normal_file, name = 'test_different_mode
     ax[0].errorbar(data_ema['epoch'], data_ema['APD_mu'], yerr=data_ema['APD_std'], capsize=3, color=line_colours[0], ecolor = "black", label='EMA Model', linewidth=2.5)
     ax[1].errorbar(data_ema['epoch'], data_ema['FID_mu'], yerr=data_ema['FID_std'], capsize=3, color=line_colours[0], ecolor = "black", linewidth=2.5)
 
-    ax[0].errorbar(data['epoch'], data['APD_mu'], yerr=data['APD_std'], capsize=3, color=line_colours[1],  ecolor = "black", label='Model', linewidth=2.5)
-    ax[1].errorbar(data['epoch'], data['FID_mu'], yerr=data['FID_std'], capsize=3, color=line_colours[1], ecolor = "black", linewidth=2.5)
+    ax[0].errorbar(data['epoch'], data['APD_mu'], yerr=data['APD_std'], capsize=3, color=line_colours[3],  ecolor = "black", label='Model', linewidth=2.5)
+    ax[1].errorbar(data['epoch'], data['FID_mu'], yerr=data['FID_std'], capsize=3, color=line_colours[3], ecolor = "black", linewidth=2.5)
 
     ax[0].legend(loc='upper right', ncols=6)
     fig.savefig('experiments/graphs/' + name)
@@ -150,7 +152,7 @@ def test_differnt_no_samples_and_scales(file, name = 'test_differnt_no_samples_a
                 epoch = line.split('/')[-2].split('_')[-1]
                 scales[current_item]['scale'] = epoch 
             else:
-                apd_mu, apd_std, fid_mu, fid_std = line.split(',')
+                apd_mu, apd_std, _, fid_mu, fid_std, _ = line.split(',')
                 scales[current_item]['APD_mu'].append(float(apd_mu))
                 scales[current_item]['APD_std'].append(float(apd_std))
                 scales[current_item]['FID_mu'].append(float(fid_mu))
@@ -240,9 +242,9 @@ def test_time_different_models(file,name = 'different_models_noise_prob.png'):
 
 
 if __name__ == '__main__':
-    # test_normal_vs_ema_models('experiments/current_tests/test_different_models_ema_0-1200.txt', 'experiments/current_tests/test_different_models_0-1200.txt', name = 'different_models_ema_0-1200.pdf')
+    test_normal_vs_ema_models('experiments/current_tests/test_different_models_ema_0-1200.txt', 'experiments/current_tests/test_different_models_0-1200.txt', name = 'different_models_ema_0-1200.pdf')
     # test_all_different_models_noise_prob('experiments/current_tests/test_different_models_noise_prob.txt', 'experiments/current_tests/test_denoising_different_models.txt', name = 'different_models_noise_prob.pdf')
-    test_differnt_no_samples_and_scales('experiments/current_tests/test_differnt_no_samples_and_scales_1200.txt', name = 'different_scales_1200.pdf', bbox=(.51,1.15))
+    # test_differnt_no_samples_and_scales('experiments/current_tests/test_differnt_no_samples_and_scales_time.txt', name = 'different_scales_1200.pdf', bbox=(.51,1.15))
     # test_differnt_no_samples_and_scales('experiments/current_tests/test_differnt_no_samples_and_scales_time.txt', name = 'different_scales_time.pdf', bbox=(.53,1))
 
     # test_dit_vs_ada_zero('experiments/current_tests/dit_vs_ada_zero.txt', name = 'dit_vs_ada_zero.pdf')

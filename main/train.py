@@ -96,14 +96,14 @@ if __name__ == '__main__':
 
         'load_model': None,
         'start_epoch': 0,
+        'epochs': 1200,
 
         'gen_x0': 0.9,
         'time_prob': 0.25,
 
         'batch_size': 2,
-        'no_samples': 225,
+        'no_samples': 500,
         'lr': 1e-4,
-        'epochs': 0,
         'samples': 16,
 
         'world_size': torch.cuda.device_count(),

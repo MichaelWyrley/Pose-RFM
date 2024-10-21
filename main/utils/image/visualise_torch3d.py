@@ -64,17 +64,17 @@ def visualise(args):
     if args['save_grid']:
 
         imw, imh=800, 800
-        renerer = Renderer(img_width=imw, img_height=imh, device=device)
+        renerer = Renderer(img_width=imw, img_height=imh, device='cpu')
         faces = faces.unsqueeze(0).expand(body_pose_params.v.shape[0], -1, -1)
         verts = body_pose_params.v
         
-        images = renerer(verts.to(device), faces.to(device)).cpu()
+        images = renerer(verts.to('cpu'), faces.to('cpu')).cpu()
 
         if args['output_obj']:
             for i in range(time_length):
                 render_obj(renerer, verts[i], faces[i], args['image_loc'] + "{:03d}.obj".format(i))
         
-        images_to_grid(images.permute(0, 3,1,2), args['image_loc'] + args['name'] + "grid.png", nrow=4)
+        images_to_grid(images.permute(0, 3,1,2), args['image_loc'] + args['name'] + "grid.pdf", nrow=4)
 
     else:
         imw, imh=800, 800
