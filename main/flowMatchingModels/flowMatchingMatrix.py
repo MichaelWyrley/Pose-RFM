@@ -22,6 +22,7 @@ class FlowMatchingMatrix(FlowMatching):
     def sample_timestep(self, n, steps=5):
         """
         Sample a single timestep for n samples, distributing the timesteps uniformly or randomly based on a random threshold.
+        Seen in Alg. 1 line 10-14
         
         :param n: Number of timestep samples to generate
         :param steps: range of timesteps for uniform generation
@@ -30,7 +31,7 @@ class FlowMatchingMatrix(FlowMatching):
 
         u_0 = torch.rand(1)
 
-        if u_0 < self.time_prob:
+        if u_0 < self.time_prob: # See Alg 1. line 13
             t = torch.linspace(0,1,steps, device=self.device)
             t = t.repeat(int(n / steps))
             if t.shape[0] < n:
@@ -41,16 +42,18 @@ class FlowMatchingMatrix(FlowMatching):
                 t = t[:n]
             
             return t.unsqueeze(-1).to(self.device)
-        else:
+        else: # See Alg 1. line 11
             return torch.rand(n, device=self.device).unsqueeze(-1)
 
     def gen_random_x(self, x_1):
         """
         Generate a random rotation matrix (SO(3)) based on the size and shape of x_1.
+        # See train step for different sampling methods
         
         :param x_1: The tensor of shape [batch size, bones, rotation matrix part, rotation matrix part]
         :return: A randomly rotated matrix reshaped to the shape of x_1 
         """
+        
         size = x_1.shape[0] * x_1.shape[1]
         x = transforms.random_rotations(size, device = self.device)
         x = x.view(x_1.shape)
@@ -60,6 +63,7 @@ class FlowMatchingMatrix(FlowMatching):
     def exp_map(self, a, b):
         """
         Exponential map for SO(3) applied between two rotation matrixes ().
+        See Eq. 1 and 5
         
         :param a: Initial rotation matrices
         :param b: Lie algebra elements of Skew-symmetric matrices
@@ -76,6 +80,7 @@ class FlowMatchingMatrix(FlowMatching):
     def log_map(self, a, b):
         """
         Logarithm map for SO(3) used to compute Lie algebra elements from rotation matrices.
+        See Eq. 2 and 6
         
         :param a: Rotation matrices from which logarithm is to be computed
         :param b: Target rotation matrices
@@ -96,6 +101,7 @@ class FlowMatchingMatrix(FlowMatching):
     def dist(self, a, b):
         """
         Compute the relative angle between two sets of rotation matrices using the SO(3) distance metric.
+        See Eq. 4
         
         :param a: First set of rotation matrices
         :param b: Second set of rotation matrices
@@ -129,6 +135,7 @@ class FlowMatchingMatrix(FlowMatching):
     def conditional_flow(self, x_0, x_1, t):
         """
         Compute the conditional flow using Riemanian Flow Matching from paper "Flow Matching on General Geometries"
+        See Eq. 11, 12 and Alg. 15
         
         :param x_0: Initial state rotation matrices
         :param x_1: Final state rotation matrices
@@ -143,6 +150,7 @@ class FlowMatchingMatrix(FlowMatching):
     def conditional_vector_field(self, x_0, x_t, x_1, t, epsilon=0.00001):
         """
         Compute the conditional vector field that minimizes the distance in the tangent space of the Lie group.
+        See Eq. 10 and Alg. 16
         
         :param x_0: Initial state rotation matrices
         :param x_t: Intermediate state rotation matrices
@@ -191,15 +199,16 @@ class FlowMatchingMatrix(FlowMatching):
     def train_step(self, x_1, x_0, c = None):
         """
         Perform a training step using input data x_1 to optimize the predictive model.
+        See Alg 1.
         
         :param x_1: Input data used for training
         :return: The computed loss as a result of training
         """
         x_1 = transforms.axis_angle_to_matrix(x_1)
 
-        if torch.rand(1) > self.gen_x0:
+        if torch.rand(1) > self.gen_x0: # See Alg. 1 line 6
             x_0 = self.gen_random_x(x_1)
-        else:
+        else: # See Alg. 1 line 8
             x_0 = transforms.axis_angle_to_matrix(x_0)
 
         t = self.sample_timestep(x_0.shape[0]).requires_grad_(True)
@@ -219,6 +228,7 @@ class FlowMatchingMatrix(FlowMatching):
     def sample(self, n, timesteps=50, scale=1, labels=None):
         """
         Generate a sample path using the model's dynamics over specified timesteps.
+        See Alg. 2
         
         :param n: Number of samples to generate
         :param timesteps: Number of timesteps to simulate
@@ -274,8 +284,9 @@ class FlowMatchingMatrix(FlowMatching):
 
     def sample_partial(self, partial_x_1, mask, timesteps=50, scale=1, stop_sampling=1, labels=None):
         """
-        Generate all the missing bones in the partial_x_1 using the model's dynamics over specified timesteps.
+        Generate all the missing bones in the partial_x_1 using the model's dynamics over specified timesteps. 
         Specifically by using Motion editing by sampling trajectory rewriting from the paper "Motion Flow Matching for Human Motion Synthesis and Editing"
+        See Alg 4.
         
         :param partial_x_1: A partial set of rotation matrices with random values for the missing values
         :param m: mask containing all the bones that are not missing
@@ -315,6 +326,7 @@ class FlowMatchingMatrix(FlowMatching):
     def denoise_pose(self, noisy_pose, initial_timestep=30, timesteps=50, scale=1, labels=None):
         """
         Denoise a noisy pose using the model's dynamics over specified timesteps.
+        See Alg 3.
         
         :param noisy_pose: Noisy pose to denoise
         :param initial_timestep: the point at which the denoising starts
