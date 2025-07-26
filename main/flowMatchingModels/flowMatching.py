@@ -6,6 +6,7 @@ class FlowMatching(ABC):
         """
         Abstract method to sample a single timestep for n samples.
         This method should define how to generate a timestep value where t ~ U()
+        Seen in Alg. 1 line 10-14
         
         :param n: Number of timestep samples to generate
         :return: A collection of sampled timesteps -> Tensor(n, 1)
@@ -17,6 +18,7 @@ class FlowMatching(ABC):
         """
         Abstract method to generate a random variable x_0 based on the condition x_1.
         This method should define the generation process of x_0 when x_1 is given, likely sampling from standard normal distribution.
+        Seen in Alg. 1 line 5-9
         
         :param x_1: The output type
         :return: A randomly generated x_0 based on x_1
@@ -28,6 +30,7 @@ class FlowMatching(ABC):
         """
         Abstract method to compute the conditional flow between x_0 and x_1 at time t.
         The conditional flow (\phi_t(x)) where the flow is defined by the ordinary diferential equation from the paper "FLOW MATCHING FOR GENERATIVE MODELING"
+        Seen in Alg. 1 line 15
         
         :param x_0: Initial state
         :param x_1: Final state
@@ -41,6 +44,7 @@ class FlowMatching(ABC):
         """
         Abstract method to compute the conditional vector field at a given point and time.
         The conditional vector field generates the conditional probability path based on the paper "FLOW MATCHING FOR GENERATIVE MODELING"
+        Seen in Alg. 1 line 16
         
         :param x_0: Initial state
         :param x_t: conditional flow for time t
@@ -56,6 +60,7 @@ class FlowMatching(ABC):
         """
         Abstract method to perform a single training step using x_1.
         This method should specify how the model updates or learns from each batch of data represented by x_1.
+        See Alg. 1
         
         :param x_1: Data used for the training step
         :return: Updates the model based on the training data
@@ -66,6 +71,8 @@ class FlowMatching(ABC):
     def sample(self, n, timesteps=50, scale=1):
         """
         Abstract method to sample 'n' data points, over a defined number of timesteps.
+        See Alg 2.
+        
         
         :param n: Number of samples to generate
         :param timesteps: Number of timesteps to simulate
@@ -79,6 +86,7 @@ class FlowMatching(ABC):
         """
         Abstract method to sample 'n' trajectories where each intermidiate timestep is also returned.
         Similar to sample(), but includes all timesteps computed
+        This is for visualisation purposes
         
         :param n: Number of complete trajectories to generate
         :param timesteps: Number of timesteps per trajectory
